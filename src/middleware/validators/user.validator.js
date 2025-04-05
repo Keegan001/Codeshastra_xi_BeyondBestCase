@@ -8,9 +8,10 @@ const registerUserSchema = Joi.object({
     .pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/)
     .message('Password must contain at least one uppercase letter, one lowercase letter, and one number'),
   confirmPassword: Joi.string().valid(Joi.ref('password'))
-    .messages({ 'any.only': 'Passwords must match' }),
+    .messages({ 'any.only': 'Passwords must match' })
+    .optional(),
   profilePicture: Joi.string().uri().optional()
-}).with('password', 'confirmPassword');
+});
 
 // User login schema
 const loginUserSchema = Joi.object({
