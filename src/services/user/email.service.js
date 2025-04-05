@@ -88,6 +88,121 @@ class EmailService {
 
     return this.transporter.sendMail(mailOptions);
   }
+
+  /**
+   * Send email notification about a new join request to itinerary owner
+   * @param {String} to - Email address of the recipient (owner)
+   * @param {Object} data - Email data
+   * @returns {Promise}
+   */
+  async sendJoinRequestNotification(to, data) {
+    const subject = `Join Request: ${data.requesterName} wants to join your itinerary`;
+    
+    const requestDate = data.requestDate ? new Date(data.requestDate).toLocaleDateString() : new Date().toLocaleDateString();
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+        <h2 style="color: #4f46e5;">New Join Request</h2>
+        <p>Hello ${data.ownerName},</p>
+        <p><strong>${data.requesterName}</strong> (${data.requesterEmail}) has requested to join your itinerary <strong>${data.itineraryTitle}</strong>.</p>
+        <div style="background-color: #f9fafb; border-left: 4px solid #4f46e5; padding: 15px; margin: 15px 0;">
+          <p style="margin: 0;"><strong>Request Details:</strong></p>
+          <p style="margin: 5px 0;">• From: ${data.requesterName} (${data.requesterEmail})</p>
+          <p style="margin: 5px 0;">• Itinerary: ${data.itineraryTitle}</p>
+          <p style="margin: 5px 0;">• Requested on: ${requestDate}</p>
+        </div>
+        <p>You can approve or reject this request from your itinerary details page.</p>
+        <div style="margin: 25px 0;">
+          <a href="${this.getBaseUrl()}/itineraries/${data.itineraryId}" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            View Join Requests
+          </a>
+        </div>
+        <p style="font-size: 0.9em; color: #666;">This is an automated message from the Travel Planner App.</p>
+      </div>
+    `;
+    
+    return this.sendEmail(to, subject, html);
+  }
+
+  /**
+   * Send approval notification for join request
+   * @param {String} to - Email address of the requester
+   * @param {Object} data - Email data
+   * @returns {Promise}
+   */
+  async sendJoinRequestApproval(to, data) {
+    const subject = `Your request to join "${data.itineraryTitle}" has been approved`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+        <h2 style="color: #10b981;">Join Request Approved</h2>
+        <p>Hello ${data.userName},</p>
+        <p>Your request to join the itinerary <strong>${data.itineraryTitle}</strong> has been approved!</p>
+        <p>You can now view this itinerary in your account.</p>
+        <div style="margin: 25px 0;">
+          <a href="${this.getBaseUrl()}/itineraries/${data.itineraryId}" style="background-color: #10b981; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            View Itinerary
+          </a>
+        </div>
+        <p style="font-size: 0.9em; color: #666;">This is an automated message from the Travel Planner App.</p>
+      </div>
+    `;
+    
+    return this.sendEmail(to, subject, html);
+  }
+
+  /**
+   * Send rejection notification for join request
+   * @param {String} to - Email address of the requester
+   * @param {Object} data - Email data
+   * @returns {Promise}
+   */
+  async sendJoinRequestRejection(to, data) {
+    const subject = `Your request to join "${data.itineraryTitle}" was not approved`;
+    
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+        <h2 style="color: #6b7280;">Join Request Update</h2>
+        <p>Hello ${data.userName},</p>
+        <p>Your request to join the itinerary <strong>${data.itineraryTitle}</strong> was not approved at this time.</p>
+        <p>You can explore other public itineraries in the application.</p>
+        <div style="margin: 25px 0;">
+          <a href="${this.getBaseUrl()}/itineraries/explore" style="background-color: #6b7280; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+            Explore Itineraries
+          </a>
+        </div>
+        <p style="font-size: 0.9em; color: #666;">This is an automated message from the Travel Planner App.</p>
+      </div>
+    `;
+    
+    return this.sendEmail(to, subject, html);
+  }
+
+  /**
+   * Get the base URL for the frontend application
+   * @returns {String} The base URL
+   */
+  getBaseUrl() {
+    return process.env.FRONTEND_URL || 'http://localhost:3000';
+  }
+
+  /**
+   * Send an email using the configured transporter
+   * @param {String} to - Recipient email
+   * @param {String} subject - Email subject
+   * @param {String} html - Email HTML content
+   * @returns {Promise} Nodemailer response
+   */
+  async sendEmail(to, subject, html) {
+    const mailOptions = {
+      from: process.env.GMAIL_USERNAME,
+      to,
+      subject,
+      html
+    };
+
+    return this.transporter.sendMail(mailOptions);
+  }
 }
 
 export default new EmailService(); 

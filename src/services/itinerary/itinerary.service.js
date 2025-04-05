@@ -85,23 +85,42 @@ class ItineraryService {
   async getItineraries(userId, query = {}) {
     const { sort = 'createdAt', order = 'desc', limit = 20, page = 1 } = query;
     
-    // Build query
-    const filter = { owner: userId };
+    // Build query to include both owned itineraries and those where user is a collaborator
+    const filter = {
+      $or: [
+        { owner: userId },
+        { 'collaborators.user': userId }
+      ]
+    };
     
     // Add additional filters if provided
     if (query.search) {
-      filter.$or = [
-        { title: { $regex: query.search, $options: 'i' } },
-        { 'destination.name': { $regex: query.search, $options: 'i' } }
+      filter.$and = [
+        {
+          $or: [
+            { title: { $regex: query.search, $options: 'i' } },
+            { 'destination.name': { $regex: query.search, $options: 'i' } }
+          ]
+        }
       ];
     }
     
     if (query.startDate) {
-      filter['dateRange.start'] = { $gte: new Date(query.startDate) };
+      const dateFilter = { 'dateRange.start': { $gte: new Date(query.startDate) } };
+      if (filter.$and) {
+        filter.$and.push(dateFilter);
+      } else {
+        filter.$and = [dateFilter];
+      }
     }
     
     if (query.endDate) {
-      filter['dateRange.end'] = { $lte: new Date(query.endDate) };
+      const dateFilter = { 'dateRange.end': { $lte: new Date(query.endDate) } };
+      if (filter.$and) {
+        filter.$and.push(dateFilter);
+      } else {
+        filter.$and = [dateFilter];
+      }
     }
     
     // Create sort object
@@ -116,7 +135,8 @@ class ItineraryService {
       .sort(sortObj)
       .skip(skip)
       .limit(Number(limit))
-      .populate('owner', 'name email');
+      .populate('owner', 'name email')
+      .populate('collaborators.user', 'name email');
     
     // Get total count for pagination
     const total = await Itinerary.countDocuments(filter);
@@ -405,6 +425,317 @@ class ItineraryService {
     await itinerary.save();
 
     // Populate and return
+    return await Itinerary.findById(itinerary._id)
+      .populate('owner', 'name email')
+      .populate('collaborators.user', 'name email');
+  }
+
+  /**
+   * Get all public itineraries
+   * @param {Object} query - Query parameters (sort, filter)
+   * @returns {Array} Itineraries
+   */
+  async getPublicItineraries(query = {}) {
+    const { sort = 'createdAt', order = 'desc', limit = 20, page = 1 } = query;
+    
+    // Build query - only get public itineraries
+    const filter = { isPrivate: false };
+    
+    // Add additional filters if provided
+    if (query.search) {
+      filter.$or = [
+        { title: { $regex: query.search, $options: 'i' } },
+        { 'destination.name': { $regex: query.search, $options: 'i' } }
+      ];
+    }
+    
+    if (query.startDate) {
+      filter['dateRange.start'] = { $gte: new Date(query.startDate) };
+    }
+    
+    if (query.endDate) {
+      filter['dateRange.end'] = { $lte: new Date(query.endDate) };
+    }
+    
+    // Create sort object
+    const sortObj = {};
+    sortObj[sort] = order === 'desc' ? -1 : 1;
+    
+    // Calculate pagination
+    const skip = (page - 1) * limit;
+    
+    // Execute query
+    const itineraries = await Itinerary.find(filter)
+      .sort(sortObj)
+      .skip(skip)
+      .limit(Number(limit))
+      .populate('owner', 'name email');
+    
+    // Get total count for pagination
+    const total = await Itinerary.countDocuments(filter);
+    
+    return {
+      itineraries,
+      pagination: {
+        total,
+        page: Number(page),
+        pages: Math.ceil(total / limit)
+      }
+    };
+  }
+
+  /**
+   * Request to join a public itinerary
+   * @param {String} itineraryId - Itinerary ID (can be MongoDB ID or UUID)
+   * @param {String} userId - User ID requesting to join
+   * @returns {Object} Join request status
+   */
+  async requestToJoinItinerary(itineraryId, userId) {
+    // Check if itineraryId is a UUID or MongoDB ID
+    const query = mongoose.isValidObjectId(itineraryId)
+      ? { _id: itineraryId }
+      : { uuid: itineraryId };
+
+    // Find itinerary
+    const itinerary = await Itinerary.findOne(query)
+      .populate('owner', 'name email');
+    
+    if (!itinerary) {
+      throw ApiError.notFound('Itinerary not found');
+    }
+    
+    // Check if user is the owner - owners shouldn't request to join their own itineraries
+    if (itinerary.owner._id.toString() === userId) {
+      throw ApiError.badRequest('You are the owner of this itinerary and already have access');
+    }
+
+    // Check if itinerary is private
+    if (itinerary.isPrivate) {
+      throw ApiError.forbidden('This itinerary is private and cannot be joined');
+    }
+
+    // Check if itinerary is publicly joinable
+    if (!itinerary.publiclyJoinable) {
+      throw ApiError.forbidden('This itinerary is not open for join requests');
+    }
+
+    // Check if user is already a collaborator
+    const isCollaborator = itinerary.collaborators.some(
+      c => c.user && c.user.toString() === userId
+    );
+
+    if (isCollaborator) {
+      throw ApiError.badRequest('You are already a collaborator on this itinerary');
+    }
+
+    // Check if user already has a pending request
+    const hasPendingRequest = itinerary.joinRequests.some(
+      req => req.user.toString() === userId && req.status === 'pending'
+    );
+
+    if (hasPendingRequest) {
+      throw ApiError.badRequest('You already have a pending request to join this itinerary');
+    }
+
+    // Add join request
+    itinerary.joinRequests.push({
+      user: userId,
+      status: 'pending',
+      requestedAt: new Date()
+    });
+
+    await itinerary.save();
+
+    // Find user
+    const User = mongoose.model('User');
+    const requester = await User.findById(userId);
+
+    // Send email notification to owner
+    try {
+      await emailService.sendJoinRequestNotification(
+        itinerary.owner.email,
+        {
+          ownerName: itinerary.owner.name || itinerary.owner.email,
+          requesterName: requester.name || requester.email,
+          requesterEmail: requester.email,
+          itineraryTitle: itinerary.title,
+          itineraryId: itinerary.uuid || itinerary._id,
+          requestDate: new Date().toISOString()
+        }
+      );
+      console.log(`Join request notification sent to ${itinerary.owner.email}`);
+    } catch (emailError) {
+      console.error('Failed to send join request notification:', emailError);
+      // Continue even if email fails
+    }
+
+    return {
+      status: 'pending',
+      message: 'Your request to join this itinerary has been submitted and is pending approval'
+    };
+  }
+
+  /**
+   * Process a join request (approve or reject)
+   * @param {String} itineraryId - Itinerary ID
+   * @param {String} requesterId - User ID of the requester
+   * @param {String} action - 'approve' or 'reject'
+   * @param {String} ownerId - Owner ID processing the request
+   * @returns {Object} Updated itinerary
+   */
+  async processJoinRequest(itineraryId, requesterId, action, ownerId) {
+    // Validate action
+    if (!['approve', 'reject'].includes(action)) {
+      throw ApiError.badRequest('Invalid action. Must be approve or reject');
+    }
+
+    // Check if itineraryId is a UUID or MongoDB ID
+    const query = mongoose.isValidObjectId(itineraryId)
+      ? { _id: itineraryId }
+      : { uuid: itineraryId };
+
+    // Find itinerary
+    const itinerary = await Itinerary.findOne(query);
+    
+    if (!itinerary) {
+      throw ApiError.notFound('Itinerary not found');
+    }
+
+    // Check if user is owner
+    if (itinerary.owner.toString() !== ownerId) {
+      throw ApiError.forbidden('Only the owner can process join requests');
+    }
+
+    // Find the join request
+    const requestIndex = itinerary.joinRequests.findIndex(
+      req => req.user.toString() === requesterId && req.status === 'pending'
+    );
+
+    if (requestIndex === -1) {
+      throw ApiError.notFound('No pending join request found for this user');
+    }
+
+    // Update the join request status
+    itinerary.joinRequests[requestIndex].status = action === 'approve' ? 'approved' : 'rejected';
+
+    // If approved, add the user as a collaborator with viewer role
+    if (action === 'approve') {
+      // Check if user is already a collaborator (shouldn't happen but just in case)
+      const isCollaborator = itinerary.collaborators.some(
+        c => c.user && c.user.toString() === requesterId
+      );
+
+      if (!isCollaborator) {
+        itinerary.collaborators.push({
+          user: requesterId,
+          role: 'viewer'  // All join requests get viewer role by default
+        });
+      }
+    }
+
+    await itinerary.save();
+
+    // Find user for email notification
+    const User = mongoose.model('User');
+    const requester = await User.findById(requesterId);
+
+    // Send email notification to requester about decision
+    try {
+      if (action === 'approve') {
+        await emailService.sendJoinRequestApproval(
+          requester.email,
+          {
+            userName: requester.name || requester.email,
+            itineraryTitle: itinerary.title,
+            itineraryId: itinerary.uuid || itinerary._id
+          }
+        );
+      } else {
+        await emailService.sendJoinRequestRejection(
+          requester.email,
+          {
+            userName: requester.name || requester.email,
+            itineraryTitle: itinerary.title
+          }
+        );
+      }
+      console.log(`Join request ${action} notification sent to ${requester.email}`);
+    } catch (emailError) {
+      console.error(`Failed to send join request ${action} notification:`, emailError);
+      // Continue even if email fails
+    }
+
+    // Populate and return the updated itinerary
+    return await Itinerary.findById(itinerary._id)
+      .populate('owner', 'name email')
+      .populate('collaborators.user', 'name email')
+      .populate('joinRequests.user', 'name email');
+  }
+
+  /**
+   * Get all join requests for an itinerary
+   * @param {String} itineraryId - Itinerary ID
+   * @param {String} ownerId - Owner ID
+   * @returns {Array} Join requests
+   */
+  async getJoinRequests(itineraryId, ownerId) {
+    // Check if itineraryId is a UUID or MongoDB ID
+    const query = mongoose.isValidObjectId(itineraryId)
+      ? { _id: itineraryId }
+      : { uuid: itineraryId };
+
+    // Find itinerary
+    const itinerary = await Itinerary.findOne(query)
+      .populate('joinRequests.user', 'name email');
+    
+    if (!itinerary) {
+      throw ApiError.notFound('Itinerary not found');
+    }
+
+    // Check if user is owner
+    if (itinerary.owner.toString() !== ownerId) {
+      throw ApiError.forbidden('Only the owner can view join requests');
+    }
+
+    return itinerary.joinRequests;
+  }
+
+  /**
+   * Toggle public join setting for an itinerary
+   * @param {String} itineraryId - Itinerary ID
+   * @param {Boolean} publiclyJoinable - Whether the itinerary is open for join requests
+   * @param {String} ownerId - Owner ID
+   * @returns {Object} Updated itinerary
+   */
+  async togglePublicJoinSetting(itineraryId, publiclyJoinable, ownerId) {
+    // Check if itineraryId is a UUID or MongoDB ID
+    const query = mongoose.isValidObjectId(itineraryId)
+      ? { _id: itineraryId }
+      : { uuid: itineraryId };
+
+    // Find itinerary
+    const itinerary = await Itinerary.findOne(query);
+    
+    if (!itinerary) {
+      throw ApiError.notFound('Itinerary not found');
+    }
+
+    // Check if user is owner
+    if (itinerary.owner.toString() !== ownerId) {
+      throw ApiError.forbidden('Only the owner can change join settings');
+    }
+
+    // Update the setting
+    itinerary.publiclyJoinable = publiclyJoinable;
+
+    // If the itinerary is private, ensure publicly joinable is false
+    if (itinerary.isPrivate) {
+      itinerary.publiclyJoinable = false;
+    }
+
+    await itinerary.save();
+
+    // Populate and return the updated itinerary
     return await Itinerary.findById(itinerary._id)
       .populate('owner', 'name email')
       .populate('collaborators.user', 'name email');

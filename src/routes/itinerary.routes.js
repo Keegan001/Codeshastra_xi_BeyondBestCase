@@ -61,6 +61,13 @@ router.delete(
   itineraryController.deleteActivity
 );
 
+// Public itineraries routes
+router.get(
+  '/public',
+  authenticate,
+  itineraryController.getPublicItineraries
+);
+
 // Get an itinerary by ID
 router.get(
   '/:id',
@@ -115,6 +122,31 @@ router.get(
   '/:itineraryId/budget',
   authenticate,
   costController.getBudgetStatus
+);
+
+// Join request routes
+router.post(
+  '/:itineraryId/join-request',
+  authenticate,
+  itineraryController.requestToJoin
+);
+
+router.patch(
+  '/:itineraryId/join-request/:requesterId',
+  authenticate,
+  itineraryController.processJoinRequest
+);
+
+router.get(
+  '/:itineraryId/join-requests',
+  authenticate,
+  itineraryController.getJoinRequests
+);
+
+router.patch(
+  '/:itineraryId/joinable',
+  authenticate,
+  itineraryController.togglePublicJoinSetting
 );
 
 export default router; 

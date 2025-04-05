@@ -41,6 +41,22 @@ const collaboratorSchema = new mongoose.Schema({
   }
 });
 
+const joinRequestSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending'
+  },
+  requestedAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const itinerarySchema = new mongoose.Schema(
   {
     uuid: {
@@ -61,6 +77,17 @@ const itinerarySchema = new mongoose.Schema(
       ref: 'User'
     },
     collaborators: [collaboratorSchema],
+    joinRequests: [joinRequestSchema],
+    isPrivate: {
+      type: Boolean,
+      default: false,
+      description: 'Flag to indicate if the itinerary is private or public'
+    },
+    publiclyJoinable: {
+      type: Boolean,
+      default: true,
+      description: 'Flag to indicate if users can request to join this itinerary'
+    },
     destination: {
       name: {
         type: String
@@ -126,6 +153,7 @@ const itinerarySchema = new mongoose.Schema(
 itinerarySchema.index({ owner: 1 });
 itinerarySchema.index({ 'destination.location': '2dsphere' });
 itinerarySchema.index({ 'routeLocations.location': '2dsphere' });
+itinerarySchema.index({ isPrivate: 1 }); // Index for querying public itineraries
 
 // Method to get the public ID (UUID)
 itinerarySchema.methods.getPublicId = function() {
