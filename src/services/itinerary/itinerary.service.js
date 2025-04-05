@@ -1088,6 +1088,51 @@ class ItineraryService {
       createdDays: createdDays.length
     };
   }
+
+  /**
+   * Update specific fields of an itinerary
+   * @param {String} itineraryId - Itinerary ID (can be MongoDB ID or UUID)
+   * @param {Object} updateFields - Fields to update (can include dot notation)
+   * @param {String} userId - User ID
+   * @returns {Object} Updated itinerary
+   */
+  async updateItineraryFields(itineraryId, updateFields, userId) {
+    // Check if itineraryId is a UUID or MongoDB ID
+    const query = mongoose.isValidObjectId(itineraryId)
+      ? { _id: itineraryId }
+      : { uuid: itineraryId };
+
+    // Find itinerary
+    const itinerary = await Itinerary.findOne(query);
+    
+    if (!itinerary) {
+      throw ApiError.notFound('Itinerary not found');
+    }
+
+    // Check if user is owner or editor collaborator
+    const isOwner = itinerary.owner.toString() === userId;
+    const isEditorCollaborator = itinerary.collaborators.some(
+      c => c.user.toString() === userId && c.role === 'editor'
+    );
+
+    if (!isOwner && !isEditorCollaborator) {
+      throw ApiError.forbidden('Access denied');
+    }
+
+    // Apply version control
+    updateFields.version = itinerary.version + 1;
+
+    // Update itinerary
+    const updatedItinerary = await Itinerary.findOneAndUpdate(
+      query,
+      { $set: updateFields },
+      { new: true, runValidators: true }
+    )
+      .populate('owner', 'name email')
+      .populate('collaborators.user', 'name email');
+
+    return updatedItinerary;
+  }
 }
 
 export default new ItineraryService(); 

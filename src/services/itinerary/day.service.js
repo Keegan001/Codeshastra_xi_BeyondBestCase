@@ -459,6 +459,137 @@ class DayService {
     
     return updatedDays;
   }
+
+  /**
+   * Clear all activities for a day
+   * @param {String} dayId - Day ID (can be MongoDB ID or UUID)
+   * @param {String} userId - User ID
+   * @returns {Object} Updated day
+   */
+  async clearDayActivities(dayId, userId) {
+    // Check if dayId is a UUID or MongoDB ID
+    const query = mongoose.isValidObjectId(dayId)
+      ? { _id: dayId }
+      : { uuid: dayId };
+
+    // Find day
+    const day = await Day.findOne(query);
+    
+    if (!day) {
+      throw ApiError.notFound('Day not found');
+    }
+
+    // Get the itinerary to check permissions
+    const itinerary = await Itinerary.findById(day.itinerary);
+    
+    if (!itinerary) {
+      throw ApiError.notFound('Associated itinerary not found');
+    }
+
+    // Check if user is owner or editor collaborator
+    const isOwner = itinerary.owner.toString() === userId;
+    const isEditorCollaborator = itinerary.collaborators.some(
+      c => c.user.toString() === userId && c.role === 'editor'
+    );
+
+    if (!isOwner && !isEditorCollaborator) {
+      throw ApiError.forbidden('Access denied');
+    }
+
+    // Get all activity IDs for this day
+    const activityIds = day.activities;
+    
+    // Start a session for transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
+    try {
+      // Delete all activities for this day
+      if (activityIds.length > 0) {
+        await Activity.deleteMany({ _id: { $in: activityIds } }, { session });
+      }
+      
+      // Clear the day's activities array
+      day.activities = [];
+      await day.save({ session });
+      
+      // Add a note to the day indicating it's a free day
+      day.notes = day.notes ? `${day.notes}\nThis is a free day for relaxation or exploration.` : 
+                             'This is a free day for relaxation or exploration.';
+      await day.save({ session });
+      
+      // Commit the transaction
+      await session.commitTransaction();
+    } catch (error) {
+      // Abort the transaction on error
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      // End the session
+      session.endSession();
+    }
+    
+    // Return the updated day
+    const updatedDay = await Day.findById(day._id);
+    return updatedDay;
+  }
+
+  /**
+   * Create a new activity for a day
+   * @param {String} dayId - Day ID
+   * @param {Object} activityData - Activity data
+   * @param {String} userId - User ID
+   * @returns {Object} Created activity
+   */
+  async createActivity(dayId, activityData, userId) {
+    // Check if dayId is a UUID or MongoDB ID
+    const query = mongoose.isValidObjectId(dayId)
+      ? { _id: dayId }
+      : { uuid: dayId };
+
+    // Find day
+    const day = await Day.findOne(query);
+    
+    if (!day) {
+      throw ApiError.notFound('Day not found');
+    }
+
+    // Get the itinerary to check permissions
+    const itinerary = await Itinerary.findById(day.itinerary);
+    
+    if (!itinerary) {
+      throw ApiError.notFound('Associated itinerary not found');
+    }
+
+    // Check if user is owner or editor collaborator
+    const isOwner = itinerary.owner.toString() === userId;
+    const isEditorCollaborator = itinerary.collaborators.some(
+      c => c.user.toString() === userId && c.role === 'editor'
+    );
+
+    if (!isOwner && !isEditorCollaborator) {
+      throw ApiError.forbidden('Access denied');
+    }
+
+    // Create activity
+    const activity = new Activity({
+      title: activityData.title,
+      description: activityData.description || '',
+      timeRange: activityData.timeRange || { start: '12:00', end: '13:00' },
+      location: activityData.location,
+      type: activityData.type || 'activity',
+      cost: activityData.cost,
+      day: day._id
+    });
+
+    await activity.save();
+
+    // Add activity to day
+    day.activities.push(activity._id);
+    await day.save();
+
+    return activity;
+  }
 }
 
 export default new DayService(); 

@@ -196,12 +196,19 @@ class ItineraryController {
   async addActivity(req, res, next) {
     try {
       const userId = req.user.id;
+      const itineraryId = req.params.id;
       const dayId = req.params.dayId;
       const activityData = req.body;
       
-      const day = await dayService.addActivity(dayId, activityData, userId);
+      // Validate required fields
+      if (!activityData.title) {
+        throw ApiError.badRequest('Activity title is required');
+      }
       
-      ApiResponse.success(res, 201, 'Activity added successfully', { day });
+      // Create the activity
+      const activity = await dayService.createActivity(dayId, activityData, userId);
+      
+      ApiResponse.success(res, 201, 'Activity added successfully', { activity });
     } catch (error) {
       next(error);
     }
@@ -598,6 +605,70 @@ class ItineraryController {
       const days = await dayService.renumberDaysChronologically(itineraryId, userId);
       
       ApiResponse.success(res, 200, 'Days renumbered successfully', { days });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Update itinerary budget
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  async updateBudget(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const itineraryId = req.params.id;
+      const { total, currency } = req.body;
+      
+      if (!total && !currency) {
+        throw ApiError.badRequest('At least one budget field (total or currency) is required');
+      }
+      
+      // Get the current itinerary
+      const itinerary = await itineraryService.getItineraryById(itineraryId, userId);
+      
+      if (!itinerary) {
+        throw ApiError.notFound('Itinerary not found');
+      }
+      
+      // Create budget update data
+      const budgetUpdate = {};
+      if (total !== undefined) budgetUpdate['budget.total'] = total;
+      if (currency) budgetUpdate['budget.currency'] = currency;
+      
+      // Update the itinerary budget
+      const updatedItinerary = await itineraryService.updateItineraryFields(
+        itineraryId, 
+        budgetUpdate, 
+        userId
+      );
+      
+      ApiResponse.success(res, 200, 'Budget updated successfully', { 
+        itinerary: updatedItinerary
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Clear all activities for a day
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  async clearDayActivities(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const itineraryId = req.params.id;
+      const dayId = req.params.dayId;
+      
+      // Clear all activities
+      const updatedDay = await dayService.clearDayActivities(dayId, userId);
+      
+      ApiResponse.success(res, 200, 'All activities cleared for the day', { day: updatedDay });
     } catch (error) {
       next(error);
     }

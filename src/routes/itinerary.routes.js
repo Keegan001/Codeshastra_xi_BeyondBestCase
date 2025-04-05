@@ -170,4 +170,25 @@ router.post(
   itineraryController.renumberDays
 );
 
+// Update itinerary budget
+router.patch(
+  '/:id/budget',
+  authenticate,
+  itineraryController.updateBudget
+);
+
+// Clear all activities for a day
+router.delete(
+  '/:id/days/:dayId/activities',
+  authenticate,
+  itineraryController.clearDayActivities
+);
+
+// Add activity to a day
+router.post(
+  '/:id/days/:dayId/activities',
+  authenticate,
+  itineraryController.addActivity
+);
+
 export default router; 
