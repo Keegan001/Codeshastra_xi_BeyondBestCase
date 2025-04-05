@@ -1,130 +1,223 @@
 import { Link } from 'react-router-dom'
 import HowItWorks from './HowItWorks'
-
-import { Lightbulb, LogIn, PlaneTakeoff } from "lucide-react";
+import { motion } from 'framer-motion'
+import { Lightbulb, LogIn, PlaneTakeoff, Globe, Map, Users } from "lucide-react";
 import balloon from "../assets/balloon.svg"; // Adjust path as needed
 
 import "./HeroSection.css"; // <-- We'll write the float animation here
 
 function Home() {
+  // Animation variants
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { 
+      opacity: 1, 
+      y: 0,
+      transition: { duration: 0.6 }
+    }
+  };
+  
+  const staggerChildren = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2
+      }
+    }
+  };
+  
   return (
-    <div>
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={fadeIn}
+    >
       
-    <section className="bg-gradient-to-br from-white via-blue-50 to-white mt-10 mb-10 flex items-center justify-center px-6 md:px-10">
+    <section className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 py-20 mb-10 flex items-center justify-center px-6 md:px-10">
       <div className="max-w-7xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-16">
         {/* Left Column */}
-        <div className="w-full md:w-1/2 text-center md:text-left">
-          <h1 className="text-5xl md:text-7xl font-extrabold leading-tight text-gray-900 mb-6">
-            Your Journey,<br />
-            <span className="text-indigo-600">Your Way</span>
-          </h1>
-          <p className="text-lg md:text-xl text-gray-700 mb-10 max-w-xl mx-auto md:mx-0">
+        <motion.div 
+          className="w-full md:w-1/2 text-center md:text-left"
+          variants={fadeIn}
+        >
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <h1 className="text-6xl md:text-7xl font-extrabold leading-tight text-gray-900 mb-6">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Safar:</span><br />
+              Your Journey,<br />
+              <span className="text-indigo-600">Your Way</span>
+            </h1>
+          </motion.div>
+          <motion.p 
+            className="text-lg md:text-xl text-gray-700 mb-10 max-w-xl mx-auto md:mx-0"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+          >
             Plan personalized travel experiences, collaborate with friends, and
             explore new places—exactly the way you want.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10 md:justify-start">
-            <Link
-              to="/register"
-              className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-md hover:bg-indigo-700 transition"
-            >
-              Get Started
-            </Link>
-            <Link
-              to="/about"
-              className="bg-white text-indigo-600 border border-indigo-600 px-8 py-3 rounded-xl font-semibold text-lg shadow-md hover:bg-gray-100 transition"
-            >
-              Learn More
-            </Link>
-          </div>
-        </div>
+          </motion.p>
+          <motion.div 
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-10 md:justify-start"
+            variants={staggerChildren}
+          >
+            <motion.div variants={fadeIn}>
+              <Link
+                to="/register"
+                className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-md hover:shadow-lg btn-pulse transition-all"
+              >
+                Get Started
+              </Link>
+            </motion.div>
+            <motion.div variants={fadeIn}>
+              <Link
+                to="/about"
+                className="glass-card text-indigo-600 border border-indigo-200 px-8 py-3 rounded-xl font-semibold text-lg shadow-md hover:shadow-lg transition-all"
+              >
+                Learn More
+              </Link>
+            </motion.div>
+          </motion.div>
+        </motion.div>
 
         {/* Right Column: Animated Balloon */}
-        <div className="w-full md:w-1/2 flex justify-center">
+        <motion.div 
+          className="w-full md:w-1/2 flex justify-center"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+        >
           <img
             src={balloon}
             alt="Balloon"
-            className="w-80 md:w-80 floating-balloon balloon-tint"
+            className="w-80 md:w-96 floating-balloon balloon-tint"
           />
-        </div>
+        </motion.div>
       </div>
     </section>
-
-
 
       <HowItWorks />
 
       {/* Features Section */}
-      <section className="py-12 bg-gray-50">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold mb-4">
-            Plan Your Perfect Trip
-          </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+      <motion.section 
+        className="py-20 bg-gradient-to-br from-white via-indigo-50 to-white"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="text-center mb-16">
+          <motion.h2 
+            className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            Plan Your Perfect Journey
+          </motion.h2>
+          <motion.p 
+            className="text-gray-600 max-w-2xl mx-auto"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+          >
             Our platform gives you all the tools you need to create, manage, and share
-            your travel plans.
-          </p>
+            your travel plans with elegance and precision.
+          </motion.p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4">
-              <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 22a10 10 0 1 1 0-20 10 10 0 0 1 0 20zm0-2a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm-3.54-4.54a1 1 0 0 1 1.41-1.41L12 16.17l2.12-2.12a1 1 0 1 1 1.42 1.41l-2.83 2.83a1 1 0 0 1-1.42 0l-2.83-2.83z" />
-              </svg>
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto px-6"
+          variants={staggerChildren}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
+          <motion.div variants={fadeIn} className="glass-card p-8 rounded-2xl">
+            <div className="h-14 w-14 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+              <PlaneTakeoff className="h-7 w-7" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Easy Planning</h3>
+            <h3 className="text-xl font-semibold mb-3 text-gray-800">Easy Planning</h3>
             <p className="text-gray-600">
               Create detailed day-by-day itineraries with our intuitive interface.
               Add activities, accommodations, and transportation.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4">
-              <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M17 17a5 5 0 1 1-4.6-5 1 1 0 0 1 1.4 1.4 3 3 0 1 0 2.8 2.8 1 1 0 1 1 1.4 1.4A5 5 0 0 1 17 17zM7 7a5 5 0 1 1-4.6-5 1 1 0 0 1 1.4 1.4 3 3 0 1 0 2.8 2.8 1 1 0 1 1 1.4 1.4A5 5 0 0 1 7 7zm10 0a3 3 0 0 1-3-3 1 1 0 0 1 2 0 1 1 0 0 0 1 1 1 1 0 0 1 0 2zm-5 10a3 3 0 0 1-3-3 1 1 0 0 1 2 0 1 1 0 0 0 1 1 1 1 0 0 1 0 2z" />
-              </svg>
+          <motion.div variants={fadeIn} className="glass-card p-8 rounded-2xl">
+            <div className="h-14 w-14 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+              <Users className="h-7 w-7" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Collaborate</h3>
+            <h3 className="text-xl font-semibold mb-3 text-gray-800">Seamless Collaboration</h3>
             <p className="text-gray-600">
               Share your itineraries with friends and family. Plan together in real-time
               and make group decisions effortlessly.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <div className="h-12 w-12 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4">
-              <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M20 11a8 8 0 0 1-8 8 1 1 0 0 1 0-2 6 6 0 0 0 6-6 1 1 0 0 1 2 0zm-2-3a6 6 0 0 1-6 6 1 1 0 0 1 0-2 4 4 0 0 0 4-4 1 1 0 0 1 2 0zM6 7a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0 4a1 1 0 1 1 0 2 1 1 0 0 1 0-2zm0 4a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
-              </svg>
+          <motion.div variants={fadeIn} className="glass-card p-8 rounded-2xl">
+            <div className="h-14 w-14 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-2xl flex items-center justify-center mb-6 shadow-lg">
+              <Map className="h-7 w-7" />
             </div>
-            <h3 className="text-xl font-semibold mb-2">Interactive Maps</h3>
+            <h3 className="text-xl font-semibold mb-3 text-gray-800">Interactive Maps</h3>
             <p className="text-gray-600">
               Visualize your journey with interactive maps. Plot your routes and
               discover nearby attractions and points of interest.
             </p>
-          </div>
-        </div>
-      </section>
+          </motion.div>
+        </motion.div>
+      </motion.section>
 
       {/* CTA Section */}
-      <section className="py-12 md:py-20 bg-indigo-600 text-white">
-        <div className="text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Start Your Adventure?
-          </h2>
-          <p className="text-xl mb-8 max-w-2xl mx-auto">
-            Join thousands of travelers who plan their perfect trips with our platform.
-          </p>
-          <Link
-            to="/register"
-            className="bg-white text-indigo-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-100"
+      <motion.section 
+        className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600 text-white"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+      >
+        <div className="text-center max-w-4xl mx-auto px-6">
+          <motion.h2 
+            className="text-4xl md:text-5xl font-bold mb-6"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
           >
-            Sign Up for Free
-          </Link>
+            Ready to Start Your Adventure?
+          </motion.h2>
+          <motion.p 
+            className="text-xl mb-10 max-w-2xl mx-auto"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+          >
+            Join thousands of travelers who plan their perfect journeys with Safar.
+            Your next unforgettable experience awaits.
+          </motion.p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+          >
+            <Link
+              to="/register"
+              className="glass px-8 py-4 rounded-xl font-medium text-lg hover:bg-white hover:text-indigo-600 transition-all duration-300 btn-pulse"
+            >
+              Begin Your Safar Journey
+            </Link>
+          </motion.div>
         </div>
-      </section>
-    </div>
+      </motion.section>
+    </motion.div>
   )
 }
 
