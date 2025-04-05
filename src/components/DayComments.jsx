@@ -12,19 +12,49 @@ const DayComments = ({ dayId }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [socket, setSocket] = useState(null);
   const commentsEndRef = useRef(null);
+  const [error, setError] = useState(null);
   
   // Initialize socket connection
   useEffect(() => {
-    if (!token) return;
+    // Get token directly from localStorage to ensure it's the most current
+    const authToken = localStorage.getItem('token');
+    if (!authToken) {
+      setError('Authentication required to view comments');
+      return;
+    }
     
     const socketInstance = io('http://localhost:5000', {
-      auth: { token }
+      auth: { token: authToken },
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 5000
     });
     
     socketInstance.on('connect', () => {
       console.log('Socket connected');
       // Join day room
       socketInstance.emit('join-day', dayId);
+      // Clear any socket-related errors
+      if (error && error.includes('Socket')) {
+        setError(null);
+      }
+    });
+    
+    socketInstance.on('connect_error', (err) => {
+      console.error('Socket connection error:', err.message);
+      setError(`Socket connection error: ${err.message}`);
+      // Fallback to regular polling if socket connection fails
+      fetchComments();
+    });
+
+    socketInstance.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
+      if (reason === 'io server disconnect') {
+        // the disconnection was initiated by the server, reconnect manually
+        socketInstance.connect();
+      }
+      // fallback to polling if socket is disconnected
+      fetchComments();
     });
     
     socketInstance.on('new-comment', (data) => {
@@ -51,7 +81,7 @@ const DayComments = ({ dayId }) => {
         socketInstance.disconnect();
       }
     };
-  }, [token, dayId]);
+  }, [dayId]);
   
   // Fetch comments when component mounts
   useEffect(() => {
@@ -68,16 +98,42 @@ const DayComments = ({ dayId }) => {
   const fetchComments = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get(
-        `/comments/days/${dayId}`
-      );
+      setError(null);
       
-      if (response.data.status === 'success') {
-        setComments(response.data.data.comments);
+      // Use the api service which automatically adds auth headers
+      console.log('Fetching comments for day:', dayId);
+      
+      const response = await api.get(`/comments/day/${dayId}`);
+      
+      console.log('Comments response:', response.data);
+      
+      if (response.data && response.data.status === 'success') {
+        setComments(response.data.data.comments || []);
+      } else {
+        setError('Failed to fetch comments');
       }
     } catch (error) {
       console.error('Error fetching comments:', error);
-      toast.error('Failed to fetch comments');
+      
+      // Provide more specific error messages based on response status
+      if (error.response) {
+        console.log('Error response status:', error.response.status);
+        console.log('Error response data:', error.response.data);
+        
+        if (error.response.status === 403) {
+          setError('You don\'t have permission to view these comments');
+        } else if (error.response.status === 401) {
+          setError('Please login to view comments');
+        } else if (error.response.status === 404) {
+          // If comments not found, just set empty array instead of showing error
+          setComments([]);
+          setError(null);
+        } else {
+          setError(`Failed to fetch comments: ${error.response.data?.message || 'Server error'}`);
+        }
+      } else {
+        setError('Failed to connect to the server');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -93,6 +149,7 @@ const DayComments = ({ dayId }) => {
     
     try {
       setIsLoading(true);
+      setError(null);
       
       // Using socket to add comment
       if (socket && socket.connected) {
@@ -105,8 +162,11 @@ const DayComments = ({ dayId }) => {
         setNewComment('');
       } else {
         // Fallback to REST API if socket is not available
+        console.log('Adding comment via REST API');
+        
+        // Use the api service instead of direct axios
         const response = await api.post(
-          `/comments/days/${dayId}`,
+          `/comments/day/${dayId}`,
           { text: newComment }
         );
         
@@ -117,7 +177,12 @@ const DayComments = ({ dayId }) => {
       }
     } catch (error) {
       console.error('Error adding comment:', error);
-      toast.error(`Failed to add comment: ${error.response?.data?.message || error.message}`);
+      
+      if (error.response?.status === 403) {
+        setError('You don\'t have permission to add comments');
+      } else {
+        setError(`Failed to add comment: ${error.response?.data?.message || error.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -126,8 +191,13 @@ const DayComments = ({ dayId }) => {
   const handleDeleteComment = async (commentId) => {
     try {
       setIsLoading(true);
+      setError(null);
+      
+      console.log('Deleting comment:', commentId);
+      
+      // Use the api service instead of direct axios
       const response = await api.delete(
-        `/comments/days/${dayId}/comments/${commentId}`
+        `/comments/day/${dayId}/comments/${commentId}`
       );
       
       if (response.data.status === 'success') {
@@ -136,7 +206,12 @@ const DayComments = ({ dayId }) => {
       }
     } catch (error) {
       console.error('Error deleting comment:', error);
-      toast.error('Failed to delete comment');
+      
+      if (error.response?.status === 403) {
+        setError('You don\'t have permission to delete this comment');
+      } else {
+        setError('Failed to delete comment');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -159,10 +234,42 @@ const DayComments = ({ dayId }) => {
   
   return (
     <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-      <h2 className="text-xl font-bold mb-4">Comments</h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Comments</h2>
+        
+        <button 
+          onClick={() => fetchComments()} 
+          className="text-indigo-600 hover:text-indigo-800 flex items-center"
+          title="Refresh comments"
+          disabled={isLoading}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 ${isLoading ? 'animate-spin' : ''}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+          {isLoading && <span className="ml-1">Loading...</span>}
+        </button>
+      </div>
+      
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mb-4 flex justify-between items-center">
+          <p>{error}</p>
+          <button 
+            onClick={() => fetchComments()} 
+            className="text-red-700 hover:text-red-900 ml-2"
+            title="Try again"
+          >
+            Try again
+          </button>
+        </div>
+      )}
       
       <div className="bg-gray-50 p-4 rounded-lg mb-4 max-h-96 overflow-y-auto">
-        {comments.length === 0 ? (
+        {isLoading && comments.length === 0 ? (
+          <div className="text-center py-4">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-500"></div>
+            <p className="mt-2 text-gray-500">Loading comments...</p>
+          </div>
+        ) : comments.length === 0 ? (
           <p className="text-gray-500 text-center py-4">No comments yet. Be the first to comment!</p>
         ) : (
           <div className="space-y-4">
