@@ -231,6 +231,7 @@ function CreateItinerary() {
             </div>
             <p className="text-sm text-gray-500 mt-1">
               Private itineraries can only be viewed by people you share them with.
+              Public itineraries are visible in the Explore page and other users can request to join them.
             </p>
           </div>
           

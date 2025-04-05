@@ -1,10 +1,14 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as itineraryService from '../../services/itinerary';
+import axios from 'axios';
+import api from '../../services/api';
 
 // Initial state
 const initialState = {
   itineraries: [],
   currentItinerary: null,
+  currentDay: null,
+  publicItineraries: null,
   isLoading: false,
   error: null
 };
@@ -95,6 +99,29 @@ export const removeCollaborator = createAsyncThunk(
       return await itineraryService.removeCollaboratorFromItinerary(itineraryId, collaboratorId);
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to remove collaborator from itinerary');
+    }
+  }
+);
+
+export const fetchPublicItineraries = createAsyncThunk(
+  'itinerary/fetchPublic',
+  async ({ page = 1, limit = 10, search = '' }, { rejectWithValue, getState }) => {
+    try {
+      // Get auth state
+      const { auth } = getState();
+      if (!auth || !auth.isAuthenticated) {
+        return rejectWithValue('Authentication required');
+      }
+      
+      // Use the configured API instance which already handles auth headers
+      const response = await api.get('/itineraries/public', {
+        params: { page, limit, search }
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching public itineraries:', error);
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch public itineraries');
     }
   }
 );
@@ -266,6 +293,20 @@ const itinerarySlice = createSlice({
       .addCase(removeCollaborator.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+      })
+      
+      // Fetch public itineraries
+      .addCase(fetchPublicItineraries.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchPublicItineraries.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.publicItineraries = action.payload;
+      })
+      .addCase(fetchPublicItineraries.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload || 'Failed to fetch public itineraries';
       })
   }
 });

@@ -25,6 +25,20 @@ function Itineraries() {
     }
   }
   
+  // Add a function to check if the user is the owner after handleDelete
+  function isUserOwner(itinerary) {
+    if (!user || !itinerary) return false;
+    
+    // Get owner ID from itinerary
+    const ownerId = itinerary.owner?._id || itinerary.owner?.id || itinerary.owner;
+    
+    // Get current user ID
+    const userId = user._id || user.id;
+    
+    // Compare as strings to ensure proper comparison
+    return String(ownerId) === String(userId);
+  }
+  
   // Create a memoized version of the itineraries data to ensure it's always an array
   const itinerariesData = Array.isArray(itineraries?.itineraries) 
     ? itineraries.itineraries 
@@ -36,12 +50,20 @@ function Itineraries() {
     <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900">My Itineraries</h1>
-        <Link 
-          to="/itineraries/new" 
-          className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          Create New Itinerary
-        </Link>
+        <div className="flex space-x-4">
+          <Link 
+            to="/itineraries/explore" 
+            className="bg-indigo-100 text-indigo-700 px-6 py-2 rounded-lg hover:bg-indigo-200 transition-colors"
+          >
+            Explore Public Itineraries
+          </Link>
+          <Link 
+            to="/itineraries/new" 
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+          >
+            Create New Itinerary
+          </Link>
+        </div>
       </div>
       
       {error && (
@@ -93,9 +115,29 @@ function Itineraries() {
               )}
               
               <div className="p-6">
-                <h3 className="text-xl font-bold mb-2 text-gray-900">
-                  {itinerary.title}
-                </h3>
+                <div className="flex justify-between items-start mb-2">
+                  <h3 className="text-xl font-bold text-gray-900">
+                    {itinerary.title}
+                  </h3>
+                  <div>
+                    <span className={`px-2 py-1 text-xs rounded-full ${
+                      itinerary.isPrivate 
+                        ? 'bg-red-100 text-red-800' 
+                        : 'bg-green-100 text-green-800'
+                    }`}>
+                      {itinerary.isPrivate ? 'Private' : 'Public'}
+                    </span>
+                    {isUserOwner(itinerary) ? (
+                      <span className="ml-2 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                        Owner
+                      </span>
+                    ) : (
+                      <span className="ml-2 px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
+                        Collaborator
+                      </span>
+                    )}
+                  </div>
+                </div>
                 <p className="text-gray-600 mb-4">
                   {itinerary.destination?.name || itinerary.destination || 'No destination specified'}
                 </p>
@@ -116,12 +158,14 @@ function Itineraries() {
                   >
                     View Details
                   </Link>
-                  <button 
-                    onClick={() => handleDelete(itinerary.id || itinerary._id || itinerary.uuid)}
-                    className="text-red-600 hover:text-red-800"
-                  >
-                    Delete
-                  </button>
+                  {isUserOwner(itinerary) && (
+                    <button 
+                      onClick={() => handleDelete(itinerary.id || itinerary._id || itinerary.uuid)}
+                      className="text-red-600 hover:text-red-800"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -255,6 +255,32 @@ function ItineraryDetails() {
     }
   }
 
+  // Add this function to handle toggling the privacy status
+  function handleTogglePrivacy() {
+    if (!isUserOwner()) return;
+    
+    const newPrivacyValue = !editData.isPrivate;
+    
+    dispatch(updateItinerary({ 
+      id, 
+      data: { 
+        isPrivate: newPrivacyValue 
+      } 
+    }))
+    .unwrap()
+    .then(() => {
+      setEditData(prev => ({
+        ...prev,
+        isPrivate: newPrivacyValue
+      }));
+      setLocalError(null);
+    })
+    .catch(err => {
+      console.error('Failed to update privacy setting:', err);
+      setLocalError('Failed to update privacy setting');
+    });
+  }
+
   // Display loading state
   if (isLoading && !itinerary) {
     return (
@@ -351,6 +377,26 @@ function ItineraryDetails() {
             ) : (
               <h1 className="text-3xl font-bold">{itinerary?.title}</h1>
             )}
+            
+            {/* Privacy Indicator */}
+            <div className="flex items-center mt-2">
+              <span className={`px-2 py-1 text-xs rounded-full ${
+                editData.isPrivate 
+                  ? 'bg-red-100 text-red-800' 
+                  : 'bg-green-100 text-green-800'
+              }`}>
+                {editData.isPrivate ? 'Private' : 'Public'}
+              </span>
+              
+              {isUserOwner() && !isEditing && (
+                <button 
+                  onClick={handleTogglePrivacy}
+                  className="ml-2 text-sm text-indigo-600 hover:text-indigo-800"
+                >
+                  {editData.isPrivate ? 'Make Public' : 'Make Private'}
+                </button>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex space-x-2">
