@@ -740,6 +740,174 @@ class ItineraryService {
       .populate('owner', 'name email')
       .populate('collaborators.user', 'name email');
   }
+
+  /**
+   * Process AI generated itinerary data and create days and activities
+   * @param {String} itineraryId - Itinerary ID
+   * @param {Object} aiData - AI generated itinerary data
+   * @param {String} userId - User ID
+   * @returns {Object} Updated itinerary with created days
+   */
+  async processAiGeneratedItinerary(itineraryId, aiData, userId) {
+    // Find itinerary
+    const itinerary = await Itinerary.findById(itineraryId);
+    
+    if (!itinerary) {
+      throw ApiError.notFound('Itinerary not found');
+    }
+    
+    // Check if user is owner or editor collaborator
+    const isOwner = itinerary.owner.toString() === userId;
+    const isEditorCollaborator = itinerary.collaborators.some(
+      c => c.user.toString() === userId && c.role === 'editor'
+    );
+    
+    if (!isOwner && !isEditorCollaborator) {
+      throw ApiError.forbidden('Access denied');
+    }
+    
+    // Validate AI data
+    if (!aiData.itinerary || !aiData.itinerary.day_wise_plan || !Array.isArray(aiData.itinerary.day_wise_plan)) {
+      throw ApiError.badRequest('Invalid AI itinerary data format');
+    }
+    
+    // Delete existing days if any
+    if (itinerary.days && itinerary.days.length > 0) {
+      // Delete associated activities
+      for (const dayId of itinerary.days) {
+        const day = await Day.findById(dayId);
+        if (day && day.activities.length > 0) {
+          await Activity.deleteMany({ _id: { $in: day.activities } });
+        }
+      }
+      
+      // Delete days
+      await Day.deleteMany({ _id: { $in: itinerary.days } });
+      
+      // Clear days array
+      itinerary.days = [];
+    }
+    
+    // Create days from AI data
+    const createdDays = [];
+    
+    for (const dayData of aiData.itinerary.day_wise_plan) {
+      try {
+        // Parse date if available
+        let dayDate = null;
+        if (dayData.date) {
+          // Try to parse the date (format might vary)
+          try {
+            dayDate = new Date(dayData.date);
+            if (isNaN(dayDate.getTime())) {
+              // Try other format (DD-MM-YYYY)
+              const parts = dayData.date.split('-');
+              if (parts.length === 3) {
+                dayDate = new Date(parts[2], parts[1] - 1, parts[0]);
+              }
+            }
+          } catch (error) {
+            console.error(`Error parsing date: ${dayData.date}`, error);
+          }
+        }
+        
+        // Create day
+        const day = new Day({
+          date: dayDate,
+          itinerary: itinerary._id,
+          notes: dayData.destination || `Day ${dayData.day}`
+        });
+        
+        await day.save();
+        
+        // Add activities
+        if (dayData.activities && Array.isArray(dayData.activities)) {
+          for (const activityTitle of dayData.activities) {
+            const activity = new Activity({
+              title: activityTitle,
+              type: 'other', // Default type
+              day: day._id
+            });
+            
+            await activity.save();
+            day.activities.push(activity._id);
+          }
+        }
+        
+        // Add accommodation as activity if available
+        if (dayData.accomodations && Array.isArray(dayData.accomodations) && dayData.accomodations.length > 0) {
+          for (const accommodation of dayData.accomodations) {
+            const activity = new Activity({
+              title: `Stay at ${accommodation.name}`,
+              type: 'accommodation',
+              day: day._id,
+              notes: `Price Range: ${accommodation.price_range || 'N/A'}`
+            });
+            
+            await activity.save();
+            day.activities.push(activity._id);
+          }
+        }
+        
+        // Add restaurants as activities if available
+        if (dayData.restaurants && Array.isArray(dayData.restaurants) && dayData.restaurants.length > 0) {
+          for (const restaurant of dayData.restaurants) {
+            const activity = new Activity({
+              title: `Eat at ${restaurant.name}`,
+              type: 'food',
+              day: day._id,
+              notes: `Cuisine: ${restaurant.cuisine || 'N/A'}, Price Range: ${restaurant.price_range || 'N/A'}`
+            });
+            
+            await activity.save();
+            day.activities.push(activity._id);
+          }
+        }
+        
+        // Add events as activities if available
+        if (dayData.events && Array.isArray(dayData.events) && dayData.events.length > 0) {
+          for (const eventTitle of dayData.events) {
+            const activity = new Activity({
+              title: eventTitle,
+              type: 'other',
+              day: day._id
+            });
+            
+            await activity.save();
+            day.activities.push(activity._id);
+          }
+        }
+        
+        // Save day with activities
+        await day.save();
+        
+        // Add day to itinerary
+        itinerary.days.push(day._id);
+        createdDays.push(day);
+      } catch (error) {
+        console.error(`Error processing day ${dayData.day}:`, error);
+        // Continue with next day
+      }
+    }
+    
+    // Save updated itinerary
+    await itinerary.save();
+    
+    // Return updated itinerary with populated days
+    const updatedItinerary = await Itinerary.findById(itineraryId)
+      .populate({
+        path: 'days',
+        populate: {
+          path: 'activities',
+          options: { sort: { 'timeRange.start': 1 } }
+        }
+      });
+    
+    return {
+      itinerary: updatedItinerary,
+      createdDays: createdDays.length
+    };
+  }
 }
 
 export default new ItineraryService(); 

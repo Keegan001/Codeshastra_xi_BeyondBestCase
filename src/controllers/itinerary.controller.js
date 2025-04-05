@@ -500,6 +500,30 @@ class ItineraryController {
       });
     }
   }
+
+  /**
+   * Process AI generated itinerary data and create days
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  async processAiItinerary(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const itineraryId = req.params.id;
+      const aiItineraryData = req.body.itineraryData;
+      
+      if (!aiItineraryData) {
+        throw ApiError.badRequest('Itinerary data is required');
+      }
+      
+      const result = await itineraryService.processAiGeneratedItinerary(itineraryId, aiItineraryData, userId);
+      
+      ApiResponse.success(res, 200, 'AI itinerary processed successfully', result);
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export default new ItineraryController(); 

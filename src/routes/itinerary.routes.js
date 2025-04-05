@@ -19,6 +19,13 @@ router.get(
   itineraryController.getItineraries
 );
 
+// Process AI generated itinerary
+router.post(
+  '/:id/process-ai-itinerary',
+  authenticate,
+  itineraryController.processAiItinerary
+);
+
 // Get a day by ID
 router.get(
   '/days/:dayId',
