@@ -400,6 +400,21 @@ function removeCollaboratorFromItinerary(itineraryId, collaboratorId) {
     });
 }
 
+/**
+ * Renumber days in chronological order
+ * @param {String} itineraryId - Itinerary ID
+ * @returns {Promise} - Promise with the result
+ */
+export const renumberDays = async (itineraryId) => {
+  try {
+    const response = await api.post(`/itineraries/${itineraryId}/renumber-days`);
+    return response.data;
+  } catch (error) {
+    console.error('Error renumbering days:', error);
+    throw error;
+  }
+};
+
 export {
   getItineraries,
   getItineraryById,
@@ -408,5 +423,5 @@ export {
   deleteItinerary,
   addDayToItinerary,
   addCollaboratorToItinerary,
-  removeCollaboratorFromItinerary
+  removeCollaboratorFromItinerary,
 } 

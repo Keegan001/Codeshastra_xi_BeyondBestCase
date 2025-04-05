@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import * as itineraryService from '../../services/itinerary';
 import axios from 'axios';
 import api from '../../services/api';
+import { renumberDays as renumberDaysService } from '../../services/itinerary';
 
 // Initial state
 const initialState = {
@@ -126,6 +127,21 @@ export const fetchPublicItineraries = createAsyncThunk(
   }
 );
 
+/**
+ * Renumber days in chronological order
+ */
+export const renumberDays = createAsyncThunk(
+  'itinerary/renumberDays',
+  async (itineraryId, { rejectWithValue }) => {
+    try {
+      const response = await renumberDaysService(itineraryId);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to renumber days');
+    }
+  }
+);
+
 // Itinerary slice
 const itinerarySlice = createSlice({
   name: 'itinerary',
@@ -178,6 +194,13 @@ const itinerarySlice = createSlice({
       .addCase(fetchItineraryById.fulfilled, (state, action) => {
         state.isLoading = false;
         state.currentItinerary = action.payload;
+        
+        // Sort days by date if they exist
+        if (state.currentItinerary && state.currentItinerary.days && state.currentItinerary.days.length > 0) {
+          state.currentItinerary.days.sort((a, b) => new Date(a.date) - new Date(b.date));
+        }
+        
+        state.error = null;
       })
       .addCase(fetchItineraryById.rejected, (state, action) => {
         state.isLoading = false;
@@ -242,11 +265,17 @@ const itinerarySlice = createSlice({
       })
       .addCase(addDayToItinerary.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.currentItinerary = action.payload;
-        const index = state.itineraries.findIndex(item => item.id === action.payload.id);
-        if (index !== -1) {
-          state.itineraries[index] = action.payload;
+        if (state.currentItinerary) {
+          // Add the new day
+          if (!state.currentItinerary.days) {
+            state.currentItinerary.days = [];
+          }
+          state.currentItinerary.days.push(action.payload.day);
+          
+          // Sort days by date
+          state.currentItinerary.days.sort((a, b) => new Date(a.date) - new Date(b.date));
         }
+        state.error = null;
       })
       .addCase(addDayToItinerary.rejected, (state, action) => {
         state.isLoading = false;
@@ -307,6 +336,28 @@ const itinerarySlice = createSlice({
       .addCase(fetchPublicItineraries.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload || 'Failed to fetch public itineraries';
+      })
+      
+      // Renumber days
+      .addCase(renumberDays.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(renumberDays.fulfilled, (state, action) => {
+        state.isLoading = false;
+        
+        // If the days array exists in the response and the current itinerary
+        if (action.payload && action.payload.days && state.currentItinerary) {
+          // Sort the days by date (just to be extra sure)
+          const sortedDays = action.payload.days.sort((a, b) => new Date(a.date) - new Date(b.date));
+          
+          // Update the days array with the sorted days
+          state.currentItinerary.days = sortedDays;
+        }
+      })
+      .addCase(renumberDays.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload || 'Failed to renumber days';
       })
   }
 });

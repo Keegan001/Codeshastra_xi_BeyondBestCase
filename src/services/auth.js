@@ -64,7 +64,8 @@ function logout() {
   // Remove token from localStorage
   localStorage.removeItem('token')
   localStorage.removeItem('user')
-  // Additional logic for server-side logout if needed
+  // Redirect to home page and reload
+  window.location.href = '/'
 }
 
 function getCurrentUser() {

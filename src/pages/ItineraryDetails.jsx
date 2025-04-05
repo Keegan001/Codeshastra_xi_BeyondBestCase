@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
-import { fetchItineraryById, updateItinerary, removeItinerary, addDayToItinerary, clearError } from '../store/slices/itinerarySlice'
+import { fetchItineraryById, updateItinerary, removeItinerary, addDayToItinerary, clearError, renumberDays } from '../store/slices/itinerarySlice'
 import { differenceInDays, addDays, format, parseISO } from 'date-fns'
 import GroupItineraryMembers from '../components/GroupItineraryMembers'
 import ItineraryMap from '../components/ItineraryMap'
@@ -9,6 +9,7 @@ import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import BudgetManager from '../components/BudgetManager'
 import api from '../services/api'
+import AiEditItinerary from '../components/AiEditItinerary'
 axios.defaults.timeout = 100000;
 
 function ItineraryDetails() {
@@ -34,6 +35,9 @@ function ItineraryDetails() {
   const [mapLocations, setMapLocations] = useState([]);
   const [budgetUpdated, setBudgetUpdated] = useState(false);
   const [isAILoading, setIsAILoading] = useState(false); // Renamed local loading state
+
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [showAiEditor, setShowAiEditor] = useState(false);
 
   // Fetch itinerary data when ID changes or on first load
   useEffect(() => {
@@ -141,35 +145,31 @@ function ItineraryDetails() {
   };
 
   function handleEditChange(e) {
-    const { name, value, type, checked } = e.target
-    setEditData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }))
+    const { name, value } = e.target;
+    setEditData({
+      ...editData,
+      [name]: value
+    });
   }
 
   function handleSave() {
-    // Validate dates
-    const start = new Date(editData.startDate)
-    const end = new Date(editData.endDate)
+    const updateData = {
+      title: editData.title,
+      description: editData.description,
+      destination: editData.destination,
+      isPrivate: editData.isPrivate
+    };
     
-    if (end < start) {
-      dispatch(clearError())
-      setLocalError('End date cannot be before start date')
-      return
-    }
-
-    dispatch(updateItinerary({ id, data: editData }))
+    dispatch(updateItinerary({ id, data: updateData }))
       .unwrap()
       .then(() => {
-        setIsEditing(false)
-        setLocalError(null)
+        setIsEditMode(false);
+        setLocalError(null);
       })
       .catch(err => {
-        console.error(err)
-        setLocalError('Failed to update itinerary')
-      })
-      window.location.reload()
+        console.error('Failed to update itinerary:', err);
+        setLocalError('Failed to update itinerary');
+      });
   }
 
   function handleDelete() {
@@ -394,6 +394,22 @@ function ItineraryDetails() {
       });
   };
 
+  function handleRenumberDays() {
+    if (window.confirm('This will renumber all days based on their chronological order. Continue?')) {
+      dispatch(renumberDays(id))
+        .unwrap()
+        .then(() => {
+          toast.success('Days renumbered successfully');
+          return dispatch(fetchItineraryById(id)).unwrap();
+        })
+        .catch(err => {
+          console.error('Failed to renumber days:', err);
+          setLocalError('Failed to renumber days');
+          toast.error('Failed to renumber days');
+        });
+    }
+  }
+
   // Conditional returns moved after all function definitions
   // Redirect if not authenticated
   if (!isAuthenticated) {
@@ -452,11 +468,151 @@ function ItineraryDetails() {
   // Main JSX return - moved to after all conditional returns
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 relative">
-      {(error || localError) && (
+      {/* Display local error if present */}
+      {localError && localError !== "Generating itinerary days with AI..." && (
         <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
-          {error || localError}
+          {localError}
         </div>
       )}
+      
+      {/* Loading message for AI generation */}
+      {localError === "Generating itinerary days with AI..." && (
+        <div className="bg-blue-100 text-blue-700 p-4 rounded-lg mb-6 flex items-center">
+          <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          {localError}
+        </div>
+      )}
+      
+      <div className="mb-8">
+        {isEditMode ? (
+          <div className="bg-white shadow-md rounded-lg p-6 mb-4">
+            <div className="mb-4">
+              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <input
+                type="text"
+                id="title"
+                name="title"
+                value={editData.title}
+                onChange={handleEditChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            
+            <div className="mb-4">
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                id="description"
+                name="description"
+                rows="3"
+                value={editData.description}
+                onChange={handleEditChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              ></textarea>
+            </div>
+            
+            <div className="mb-4">
+              <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+              <input
+                type="text"
+                id="destination"
+                name="destination"
+                value={editData.destination}
+                onChange={handleEditChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+            </div>
+            
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setIsEditMode(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white shadow-md rounded-lg p-6 mb-4">
+            <div className="flex justify-between items-start mb-2">
+              <h1 className="text-2xl font-bold text-gray-800">{itinerary?.title}</h1>
+            </div>
+            {itinerary?.description && (
+              <p className="text-gray-600 mb-4">{itinerary.description}</p>
+            )}
+            <div className="flex flex-wrap items-center text-sm text-gray-600 gap-4">
+              <div className="flex items-center">
+                <i className="fas fa-map-marker-alt text-red-500 mr-2"></i>
+                <span>{destinationName}</span>
+              </div>
+              <div className="flex items-center">
+                <i className="fas fa-calendar mr-2"></i>
+                <span>{formattedStartDate} - {formattedEndDate}</span>
+              </div>
+              {itinerary?.isPrivate ? (
+                <div className="flex items-center">
+                  <i className="fas fa-lock text-gray-500 mr-2"></i>
+                  <span>Private</span>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <i className="fas fa-globe text-gray-500 mr-2"></i>
+                  <span>Public</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* Editing tools */}
+        {isUserOwnerOrEditor() && (
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-4 items-center">
+              <button
+                onClick={() => setIsEditMode(!isEditMode)}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2"
+              >
+                <i className={`fas fa-${isEditMode ? 'times' : 'edit'}`}></i>
+                {isEditMode ? 'Cancel Edit' : 'Edit Details'}
+              </button>
+
+              {isUserOwner() && (
+                <button
+                  onClick={handleDelete}
+                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center gap-2"
+                >
+                  <i className="fas fa-trash"></i>
+                  Delete
+                </button>
+              )}
+              
+              {/* AI Edit button that toggles the AI editor visibility */}
+              <button
+                onClick={() => setShowAiEditor(!showAiEditor)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 flex items-center gap-2"
+              >
+                <i className="fas fa-magic"></i>
+                {showAiEditor ? 'Hide AI Editor' : 'AI Edit Itinerary'}
+              </button>
+            </div>
+            
+            {/* AI Edit Itinerary section - Display if showAiEditor is true */}
+            {showAiEditor && (
+              <div className="mt-4">
+                <AiEditItinerary itineraryId={id} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
         <div className="flex items-center">
@@ -755,6 +911,16 @@ function ItineraryDetails() {
           </h2>
           <div className="flex space-x-2">
             <button
+              onClick={handleRenumberDays}
+              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-green-400 flex items-center"
+              disabled={isLoading || (!itinerary?.days || itinerary.days.length < 2)}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
+              </svg>
+              Renumber Days
+            </button>
+            <button
               onClick={generateInitialDays}
               className="bg-[#56288A] text-white px-4 py-2 rounded-lg hover:bg-[#864BD8] disabled:bg-[#56288A]/60 flex items-center"
               disabled={isAILoading}
@@ -813,34 +979,37 @@ function ItineraryDetails() {
       ) : (
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
           <ul className="divide-y divide-gray-200">
-            {itinerary.days.map(day => (
-              <li key={day.id} className="group hover:bg-gray-50 transition-colors">
-                <Link 
-                  to={`/itineraries/${id}/days/${day.id}`}
-                  className="block p-6"
-                >
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="text-lg font-medium text-gray-800 group-hover:text-[#56288A]">Day {day.dayNumber}</h3>
-                      <p className="text-gray-600">
-                        {new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                      </p>
-                    </div>
-                    <div className="flex items-center">
-                      <span className="flex items-center text-gray-600 mr-2">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            {itinerary.days
+              .slice() // Create a copy to avoid mutating the original array
+              .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sort by date
+              .map((day, index) => (
+                <li key={day.id} className="group hover:bg-gray-50 transition-colors">
+                  <Link 
+                    to={`/itineraries/${id}/days/${day.id}`}
+                    className="block p-6"
+                  >
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-800 group-hover:text-[#56288A]">Day {index + 1}</h3>
+                        <p className="text-gray-600">
+                          {new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                        </p>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="flex items-center text-gray-600 mr-2">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                          </svg>
+                          {day.activities?.length || 0} Activities
+                        </span>
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 group-hover:text-[#56288A] transition-colors" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
                         </svg>
-                        {day.activities?.length || 0} Activities
-                      </span>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 group-hover:text-[#56288A] transition-colors" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                      </svg>
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              </li>
-            ))}
+                  </Link>
+                </li>
+              ))}
           </ul>
         </div>
       )}
