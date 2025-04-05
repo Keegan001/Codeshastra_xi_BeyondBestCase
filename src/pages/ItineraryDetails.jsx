@@ -5,12 +5,15 @@ import { fetchItineraryById, updateItinerary, removeItinerary, addDayToItinerary
 import { differenceInDays, addDays, format, parseISO } from 'date-fns'
 import GroupItineraryMembers from '../components/GroupItineraryMembers'
 import ItineraryMap from '../components/ItineraryMap'
+import axios from 'axios'
+import { toast } from 'react-hot-toast'
 
 function ItineraryDetails() {
+  // Move all hooks to the top
   const { id } = useParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const { isAuthenticated, user } = useSelector(state => state.auth)
+  const { isAuthenticated, user, token } = useSelector(state => state.auth)
   const { currentItinerary: itinerary, isLoading, error } = useSelector(state => state.itinerary)
   
   const [localError, setLocalError] = useState(null)
@@ -26,22 +29,6 @@ function ItineraryDetails() {
 
   const [showMap, setShowMap] = useState(false);
   const [mapLocations, setMapLocations] = useState([]);
-
-  // Helper function to check if the current user is the owner
-  const isUserOwner = () => {
-    if (!itinerary || !itinerary.owner || !user) return false;
-    
-    // Convert IDs to strings for comparison
-    const ownerId = itinerary.owner._id?.toString() || itinerary.owner.id?.toString() || itinerary.owner.toString();
-    const userId = user._id?.toString() || user.id?.toString();
-    
-    return ownerId === userId;
-  };
-
-  // Redirect if not authenticated
-  if (!isAuthenticated) {
-    return <Navigate to="/login" />
-  }
 
   // Fetch itinerary data when ID changes or on first load
   useEffect(() => {
@@ -114,6 +101,17 @@ function ItineraryDetails() {
       setMapLocations([]);
     }
   }, [itinerary]);
+
+  // Helper function to check if the current user is the owner
+  const isUserOwner = () => {
+    if (!itinerary || !itinerary.owner || !user) return false;
+    
+    // Convert IDs to strings for comparison
+    const ownerId = itinerary.owner._id?.toString() || itinerary.owner.id?.toString() || itinerary.owner.toString();
+    const userId = user._id?.toString() || user.id?.toString();
+    
+    return ownerId === userId;
+  };
 
   function handleEditChange(e) {
     const { name, value, type, checked } = e.target
@@ -196,7 +194,12 @@ function ItineraryDetails() {
   }
 
   function generateInitialDays() {
-    if (!itinerary) return;
+    console.log("Generate days function called - starting");
+    if (!itinerary) {
+      console.log("No itinerary found, returning");
+      setLocalError('No itinerary found. Please try again.');
+      return;
+    }
     
     // Get dates from appropriate properties
     let startDate, endDate;
@@ -208,30 +211,76 @@ function ItineraryDetails() {
       endDate = new Date(itinerary.endDate);
     }
     
-    const dayCount = differenceInDays(endDate, startDate) + 1;
+    // Format dates for API request
+    const formattedStartDate = format(startDate, 'yyyy-MM-dd');
+    const formattedEndDate = format(endDate, 'yyyy-MM-dd');
     
-    // Check if we need to create days (if none exist yet)
-    if (!itinerary.days || itinerary.days.length === 0) {
-      const promises = [];
-      
-      for (let i = 0; i < dayCount; i++) {
-        const dayDate = addDays(startDate, i);
-        const newDay = {
-          dayNumber: i + 1,
-          date: format(dayDate, 'yyyy-MM-dd'),
-          activities: []
-        };
+    // Prepare API request data according to the sample input in endpoint.md
+    const requestData = {
+      source: itinerary.source || itinerary.startLocation || "Borivali", // Default if not available
+      destination: itinerary.destination?.name || itinerary.destination || "India Gate", // Handle both object and string
+      activities_to_attend: itinerary.activities || itinerary.points_of_interest || [],
+      date_range: [formattedStartDate, formattedEndDate],
+      budget: itinerary.budget || "25000 INR", // Default if not available
+      numberofpeople: itinerary.participants?.length || itinerary.numberOfPeople || 2 // Default if not available
+    };
+
+    console.log("API request data:", requestData);
+    
+    setLocalError(null);
+    
+    // Show local loading message
+    const loadingMessage = "Generating itinerary days with AI...";
+    setLocalError(loadingMessage);
+    
+    console.log("Making API call to generate itinerary using axios");
+    // Make API call to generate itinerary using axios
+    axios.post('http://127.0.0.1:8000/api/ai/generate-itinerary', requestData)
+      .then(response => {
+        console.log("API response received:", response.status);
+        return response.data;
+      })
+      .then(data => {
+        console.log('AI generated itinerary:', data);
         
-        promises.push(dispatch(addDayToItinerary({ itineraryId: id, dayData: newDay })).unwrap());
-      }
-      
-      Promise.all(promises)
-        .then(() => dispatch(fetchItineraryById(id)))
-        .catch(err => {
-          console.error('Failed to generate days', err);
-          setLocalError('Failed to generate days for this itinerary');
-        });
-    }
+        // Clear loading message if it's still the same
+        if (localError === loadingMessage) {
+          setLocalError(null);
+        }
+        
+        // Check if the response has the expected structure
+        if (data && data.itinerary && data.itinerary.day_wise_plan) {
+          // Send the AI response to our backend for processing
+          console.log("Sending AI response to backend for processing...");
+          // Get token from localStorage instead of Redux state
+          const authToken = localStorage.getItem('token');
+          if (!authToken) {
+            throw new Error('Authentication token not found. Please log in again.');
+          }
+          
+          return axios.post(
+            `http://localhost:5000/api/itineraries/${id}/process-ai-itinerary`,
+            { itineraryData: data },
+            { headers: { Authorization: `Bearer ${authToken}` } }
+          );
+        } else {
+          throw new Error('Invalid AI response format');
+        }
+      })
+      .then(response => {
+        console.log('Backend processing complete:', response.data);
+        
+        // Refresh the itinerary data to show the new days
+        return dispatch(fetchItineraryById(id)).unwrap();
+      })
+      .then(() => {
+        toast.success('Days successfully generated!');
+      })
+      .catch(error => {
+        console.error('Error generating days:', error);
+        setLocalError('Failed to generate days. Please try again.');
+        toast.error('Failed to generate days');
+      });
   }
 
   function handleSaveRoute() {
@@ -281,6 +330,33 @@ function ItineraryDetails() {
     });
   }
 
+  // Get displayed dates in the correct format
+  const getFormattedDate = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
+      return date.toLocaleDateString();
+    } catch (e) {
+      console.error('Error formatting date:', e);
+      return dateStr;
+    }
+  };
+  
+  const displayStartDate = itinerary?.dateRange?.start || itinerary?.startDate || '';
+  const displayEndDate = itinerary?.dateRange?.end || itinerary?.endDate || '';
+  const formattedStartDate = getFormattedDate(displayStartDate);
+  const formattedEndDate = getFormattedDate(displayEndDate);
+  const destinationName = 
+    typeof itinerary?.destination === 'object' ? 
+      itinerary.destination.name : 
+      (typeof itinerary?.destination === 'string' ? itinerary.destination : '');
+
+  // Conditional returns moved after all function definitions
+  // Redirect if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" />
+  }
+  
   // Display loading state
   if (isLoading && !itinerary) {
     return (
@@ -330,27 +406,7 @@ function ItineraryDetails() {
     );
   }
 
-  // Get displayed dates in the correct format
-  const getFormattedDate = (dateStr) => {
-    if (!dateStr) return '';
-    try {
-      const date = typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-      return date.toLocaleDateString();
-    } catch (e) {
-      console.error('Error formatting date:', e);
-      return dateStr;
-    }
-  };
-  
-  const displayStartDate = itinerary?.dateRange?.start || itinerary?.startDate || '';
-  const displayEndDate = itinerary?.dateRange?.end || itinerary?.endDate || '';
-  const formattedStartDate = getFormattedDate(displayStartDate);
-  const formattedEndDate = getFormattedDate(displayEndDate);
-  const destinationName = 
-    typeof itinerary?.destination === 'object' ? 
-      itinerary.destination.name : 
-      (typeof itinerary?.destination === 'string' ? itinerary.destination : '');
-
+  // Main JSX return - moved to after all conditional returns
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
       {(error || localError) && (
@@ -580,17 +636,17 @@ function ItineraryDetails() {
         <div className="flex space-x-2">
           <button
             onClick={generateInitialDays}
-            className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded hover:bg-indigo-200"
-            disabled={isLoading || (itinerary?.days && itinerary.days.length > 0)}
-          >
-            Generate Days
-          </button>
-          <button
-            onClick={handleAddDay}
             className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
             disabled={isLoading}
           >
-            Add Day
+            Generate Days with AI
+          </button>
+          <button
+            onClick={handleAddDay}
+            className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
+            disabled={isLoading}
+          >
+            Add Day Manually
           </button>
         </div>
       </div>
@@ -605,7 +661,7 @@ function ItineraryDetails() {
             onClick={generateInitialDays}
             className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
           >
-            Generate Days Based on Dates
+            Generate Days with AI
           </button>
         </div>
       ) : (
