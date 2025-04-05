@@ -1,6 +1,7 @@
 import { Itinerary, Day, Activity } from '../../models/index.js';
 import { ApiError } from '../../middleware/errorHandler.js';
 import mongoose from 'mongoose';
+import emailService from '../user/email.service.js';
 
 /**
  * ItineraryService - Handles itinerary-related operations
@@ -303,14 +304,15 @@ class ItineraryService {
       : { uuid: itineraryId };
 
     // Find itinerary
-    const itinerary = await Itinerary.findOne(query);
+    const itinerary = await Itinerary.findOne(query)
+      .populate('owner', 'name email');
     
     if (!itinerary) {
       throw ApiError.notFound('Itinerary not found');
     }
 
     // Check if user is owner
-    if (itinerary.owner.toString() !== userId) {
+    if (itinerary.owner._id.toString() !== userId) {
       throw ApiError.forbidden('Only the owner can add collaborators');
     }
 
@@ -319,12 +321,12 @@ class ItineraryService {
     const collaborator = await User.findOne({ email: collaboratorEmail });
     
     if (!collaborator) {
-      throw ApiError.notFound('User not found');
+      throw ApiError.notFound('User not found. They must have an account to be added to the itinerary.');
     }
 
     // Check if user is already a collaborator
     const isCollaborator = itinerary.collaborators.some(
-      c => c.user.toString() === collaborator._id.toString()
+      c => c.user && c.user.toString() === collaborator._id.toString()
     );
 
     if (isCollaborator) {
@@ -339,10 +341,29 @@ class ItineraryService {
 
     await itinerary.save();
 
-    // Populate and return
-    return await Itinerary.findById(itinerary._id)
+    // Get the updated itinerary with populated fields
+    const updatedItinerary = await Itinerary.findById(itinerary._id)
       .populate('owner', 'name email')
       .populate('collaborators.user', 'name email');
+
+    // Send email invitation
+    try {
+      await emailService.sendGroupItineraryInvitation(
+        collaboratorEmail,
+        {
+          inviterName: itinerary.owner.name || itinerary.owner.email,
+          itineraryTitle: itinerary.title,
+          itineraryId: itinerary.uuid || itinerary._id,
+          role: role
+        }
+      );
+      console.log(`Invitation email sent to ${collaboratorEmail}`);
+    } catch (emailError) {
+      console.error('Failed to send invitation email:', emailError);
+      // Continue even if email fails
+    }
+
+    return updatedItinerary;
   }
 
   /**
