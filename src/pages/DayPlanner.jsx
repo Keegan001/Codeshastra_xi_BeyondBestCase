@@ -4,6 +4,7 @@ import { useSelector } from 'react-redux'
 import { getItineraryById } from '../services/itinerary'
 import { searchPlaces } from '../services/place'
 import axios from 'axios'
+import DayComments from '../components/DayComments'
 
 function DayPlanner() {
   const { id, dayId } = useParams()
@@ -25,6 +26,7 @@ function DayPlanner() {
     endTime: '',
     notes: '',
     cost: 0,
+    costCurrency: 'USD',
     type: 'other'
   })
   const [isAddingActivity, setIsAddingActivity] = useState(false)
@@ -83,38 +85,35 @@ function DayPlanner() {
   
   // Transform backend day data to match frontend format
   function transformDayData(backendDay) {
-    console.log('Transforming day data:', backendDay)
+    if (!backendDay) return null;
     
-    // Determine the day number based on date if not provided
-    let dayNumber = backendDay.dayNumber
-    
-    if (!dayNumber && itinerary && itinerary.dateRange && backendDay.date) {
-      const startDate = new Date(itinerary.dateRange.start)
-      const dayDate = new Date(backendDay.date)
-      dayNumber = Math.floor((dayDate - startDate) / (1000 * 60 * 60 * 24)) + 1
+    // Process activities if they exist
+    let transformedActivities = [];
+    if (backendDay.activities && Array.isArray(backendDay.activities)) {
+      transformedActivities = backendDay.activities.map(activity => {
+        return {
+          id: activity._id || activity.id || activity.uuid,
+          title: activity.title || '',
+          type: activity.type || 'other',
+          startTime: activity.timeRange?.start ? formatTimeFromDate(activity.timeRange.start) : '',
+          endTime: activity.timeRange?.end ? formatTimeFromDate(activity.timeRange.end) : '',
+          notes: activity.notes || '',
+          cost: activity.cost?.amount || 0,
+          placeId: activity.location?.placeId || '',
+          placeName: activity.location?.name || '',
+          costObject: activity.cost || { amount: 0, currency: 'USD' }
+        };
+      });
     }
     
-    // Check if activities is populated
-    const activities = backendDay.activities || []
-    
-    // Transform activities to match frontend format
-    const transformedActivities = activities.map((activity, index) => {
-      console.log(`Processing activity ${index}:`, activity)
-      
-      return {
-        id: activity._id || activity.id || activity.uuid || `activity-${index}`,
-        title: activity.title || 'Unnamed Activity',
-        type: activity.type || 'other',
-        startTime: activity.timeRange?.start ? formatTimeFromDate(activity.timeRange.start) : '',
-        endTime: activity.timeRange?.end ? formatTimeFromDate(activity.timeRange.end) : '',
-        notes: activity.notes || activity.description || '',
-        cost: activity.cost?.amount || activity.cost || 0,
-        placeName: activity.location?.name || '',
-        placeId: activity.location?.placeId || '',
-        // Keep original data for reference
-        originalData: activity
-      }
-    })
+    // Extract day number - either directly provided or calculate from date
+    let dayNumber = backendDay.dayNumber;
+    if (!dayNumber && itinerary && backendDay.date && itinerary.dateRange?.start) {
+      const startDate = new Date(itinerary.dateRange.start);
+      const currentDate = new Date(backendDay.date);
+      const timeDiff = currentDate - startDate;
+      dayNumber = Math.floor(timeDiff / (1000 * 60 * 60 * 24)) + 1;
+    }
     
     return {
       id: backendDay._id || backendDay.id || backendDay.uuid,
@@ -193,7 +192,10 @@ function DayPlanner() {
       title: newActivity.title,
       type: newActivity.type || 'other',
       notes: newActivity.notes,
-      cost: { amount: parseFloat(newActivity.cost) || 0 },
+      cost: { 
+        amount: parseFloat(newActivity.cost) || 0,
+        currency: newActivity.costCurrency || 'USD'
+      },
       location: newActivity.placeName ? {
         name: newActivity.placeName,
         placeId: newActivity.placeId
@@ -242,6 +244,7 @@ function DayPlanner() {
         endTime: '',
         notes: '',
         cost: 0,
+        costCurrency: 'USD',
         type: 'other'
       })
       setSelectedPlace(null)
@@ -460,18 +463,35 @@ function DayPlanner() {
                       htmlFor="cost" 
                       className="block text-gray-700 font-medium mb-2"
                     >
-                      Estimated Cost ($)
+                      Estimated Cost
                     </label>
-                    <input
-                      type="number"
-                      id="cost"
-                      name="cost"
-                      value={newActivity.cost}
-                      onChange={handleActivityInputChange}
-                      min="0"
-                      step="0.01"
-                      className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
+                    <div className="flex">
+                      <input
+                        type="number"
+                        id="cost"
+                        name="cost"
+                        value={newActivity.cost}
+                        onChange={handleActivityInputChange}
+                        className="w-full px-4 py-2 border rounded-l focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        min="0"
+                        step="0.01"
+                      />
+                      <select
+                        id="costCurrency"
+                        name="costCurrency"
+                        value={newActivity.costCurrency}
+                        onChange={handleActivityInputChange}
+                        className="px-2 py-2 border-t border-r border-b rounded-r focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="INR">INR</option>
+                        <option value="GBP">GBP</option>
+                        <option value="AUD">AUD</option>
+                        <option value="CAD">CAD</option>
+                        <option value="JPY">JPY</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
                 
@@ -549,6 +569,7 @@ function DayPlanner() {
                         endTime: '',
                         notes: '',
                         cost: 0,
+                        costCurrency: 'USD',
                         type: 'other'
                       })
                     }}
@@ -604,6 +625,11 @@ function DayPlanner() {
                                 ${parseFloat(activity.cost).toFixed(2)}
                               </span>
                             )}
+                            {activity.costObject?.amount > 0 && (
+                              <span className="ml-3 bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
+                                {activity.costObject.currency} {parseFloat(activity.costObject.amount).toFixed(2)}
+                              </span>
+                            )}
                           </div>
                           
                           {(activity.startTime || activity.endTime) && (
@@ -647,6 +673,9 @@ function DayPlanner() {
           )}
         </div>
       </div>
+      
+      {/* Add DayComments component */}
+      {day && <DayComments dayId={day.id} />}
     </div>
   )
 }

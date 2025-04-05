@@ -16,7 +16,10 @@ function CreateItinerary() {
     startDate: '',
     endDate: '',
     description: '',
-    isPrivate: false
+    isPrivate: false,
+    source: '',
+    budget: 0,
+    currency: 'USD'
   })
   
   const [locations, setLocations] = useState([])
@@ -212,27 +215,68 @@ function CreateItinerary() {
           </div>
           
           <div className="mb-6">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="isPrivate"
-                name="isPrivate"
-                checked={formData.isPrivate}
+            <label className="flex items-center cursor-pointer">
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  className="sr-only"
+                  name="isPrivate"
+                  checked={formData.isPrivate}
+                  onChange={handleChange}
+                />
+                <div className={`block w-14 h-8 rounded-full ${formData.isPrivate ? 'bg-indigo-600' : 'bg-gray-300'}`}></div>
+                <div className={`dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform ${formData.isPrivate ? 'transform translate-x-6' : ''}`}></div>
+              </div>
+              <div className="ml-3 text-gray-700 font-medium">
+                Private Itinerary
+              </div>
+            </label>
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-gray-700 font-medium mb-2">
+              Where did you hear about us? (optional)
+            </label>
+            <input
+              type="text"
+              name="source"
+              value={formData.source}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Social media, friend, etc."
+            />
+          </div>
+          
+          <div className="mb-6">
+            <label className="block text-gray-700 font-medium mb-2">
+              Budget (optional)
+            </label>
+            <div className="flex space-x-2">
+              <select
+                name="currency"
+                value={formData.currency || 'USD'}
                 onChange={handleChange}
-                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                disabled={isLoading}
-              />
-              <label 
-                htmlFor="isPrivate" 
-                className="ml-2 block text-gray-700"
+                className="px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
-                Make this itinerary private
-              </label>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="INR">INR</option>
+                <option value="GBP">GBP</option>
+                <option value="AUD">AUD</option>
+                <option value="CAD">CAD</option>
+                <option value="JPY">JPY</option>
+              </select>
+              <input
+                type="number"
+                name="budget"
+                value={formData.budget}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Total budget amount"
+                min="0"
+                step="0.01"
+              />
             </div>
-            <p className="text-sm text-gray-500 mt-1">
-              Private itineraries can only be viewed by people you share them with.
-              Public itineraries are visible in the Explore page and other users can request to join them.
-            </p>
           </div>
           
           <div className="mb-6">

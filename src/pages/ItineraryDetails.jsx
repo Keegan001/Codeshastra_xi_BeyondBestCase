@@ -7,6 +7,7 @@ import GroupItineraryMembers from '../components/GroupItineraryMembers'
 import ItineraryMap from '../components/ItineraryMap'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
+import BudgetManager from '../components/BudgetManager'
 
 function ItineraryDetails() {
   // Move all hooks to the top
@@ -29,6 +30,7 @@ function ItineraryDetails() {
 
   const [showMap, setShowMap] = useState(false);
   const [mapLocations, setMapLocations] = useState([]);
+  const [budgetUpdated, setBudgetUpdated] = useState(false);
 
   // Fetch itinerary data when ID changes or on first load
   useEffect(() => {
@@ -111,6 +113,28 @@ function ItineraryDetails() {
     const userId = user._id?.toString() || user.id?.toString();
     
     return ownerId === userId;
+  };
+
+  // Helper function to check if the current user is the owner or editor
+  const isUserOwnerOrEditor = () => {
+    if (!itinerary || !user) return false;
+    
+    // Convert IDs to strings for comparison
+    const ownerId = itinerary.owner._id?.toString() || itinerary.owner.id?.toString() || itinerary.owner.toString();
+    const userId = user._id?.toString() || user.id?.toString();
+    
+    // Check if user is owner
+    const isOwner = ownerId === userId;
+    
+    // Check if user is an editor collaborator
+    const isEditorCollaborator = itinerary.collaborators?.some(
+      c => {
+        const collaboratorId = c.user._id?.toString() || c.user.id?.toString() || c.user.toString();
+        return collaboratorId === userId && c.role === 'editor';
+      }
+    );
+    
+    return isOwner || isEditorCollaborator;
   };
 
   function handleEditChange(e) {
@@ -306,7 +330,7 @@ function ItineraryDetails() {
 
   // Add this function to handle toggling the privacy status
   function handleTogglePrivacy() {
-    if (!isUserOwner()) return;
+    if (!isUserOwnerOrEditor()) return;
     
     const newPrivacyValue = !editData.isPrivate;
     
@@ -350,6 +374,22 @@ function ItineraryDetails() {
     typeof itinerary?.destination === 'object' ? 
       itinerary.destination.name : 
       (typeof itinerary?.destination === 'string' ? itinerary.destination : '');
+
+  // Handler for budget updates
+  const handleBudgetUpdate = (updatedBudget) => {
+    console.log('Budget updated:', updatedBudget);
+    setBudgetUpdated(true);
+    
+    // Fetch the latest itinerary data after budget update
+    dispatch(fetchItineraryById(id))
+      .unwrap()
+      .then(() => {
+        console.log('Itinerary refreshed after budget update');
+      })
+      .catch(err => {
+        console.error('Failed to refresh itinerary:', err);
+      });
+  };
 
   // Conditional returns moved after all function definitions
   // Redirect if not authenticated
@@ -408,7 +448,7 @@ function ItineraryDetails() {
 
   // Main JSX return - moved to after all conditional returns
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4">
+    <div className="max-w-6xl mx-auto py-8 px-4">
       {(error || localError) && (
         <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
           {error || localError}
@@ -444,7 +484,7 @@ function ItineraryDetails() {
                 {editData.isPrivate ? 'Private' : 'Public'}
               </span>
               
-              {isUserOwner() && !isEditing && (
+              {isUserOwnerOrEditor() && !isEditing && (
                 <button 
                   onClick={handleTogglePrivacy}
                   className="ml-2 text-sm text-indigo-600 hover:text-indigo-800"
@@ -604,7 +644,7 @@ function ItineraryDetails() {
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold">Itinerary Route</h2>
-            {isUserOwner() && (
+            {isUserOwnerOrEditor() && (
               <button
                 onClick={handleSaveRoute}
                 className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
@@ -617,17 +657,27 @@ function ItineraryDetails() {
           <ItineraryMap 
             locations={mapLocations} 
             setLocations={setMapLocations} 
-            readOnly={!isUserOwner()}
-            onSaveLocations={isUserOwner() ? handleSaveRoute : null}
+            readOnly={!isUserOwnerOrEditor()}
+            onSaveLocations={isUserOwnerOrEditor() ? handleSaveRoute : null}
           />
         </div>
+      )}
+      
+      {/* Add BudgetManager component */}
+      {itinerary && (
+        <BudgetManager 
+          itineraryId={id} 
+          budget={itinerary.budget}
+          onUpdate={handleBudgetUpdate}
+          isEditorRole={isUserOwnerOrEditor()}
+        />
       )}
       
       {/* Add Group Members section below the itinerary details and above the daily plan */}
       {itinerary && (
         <GroupItineraryMembers 
           itinerary={itinerary} 
-          isOwner={isUserOwner()}
+          isOwner={isUserOwnerOrEditor()}
         />
       )}
       

@@ -170,7 +170,12 @@ function createItinerary(formData) {
       start: formData.startDate,
       end: formData.endDate
     },
-    generateDays: true
+    generateDays: true,
+    source: formData.source || '',
+    budget: {
+      currency: formData.currency || 'USD',
+      total: parseFloat(formData.budget) || 0
+    }
   };
 
   // Add locations data if available
