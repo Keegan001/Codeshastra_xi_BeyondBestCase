@@ -11,6 +11,86 @@ import requests
 from pydantic import BaseModel
 from datetime import datetime, timedelta
 import base64
+from geopy.geocoders import Nominatim
+
+def get_coords(location):
+    """Returns (latitude, longitude) for given location name."""
+    try:
+        geolocator = Nominatim(user_agent="geocoding-app")
+        location_data = geolocator.geocode(location)
+        return (location_data.latitude, location_data.longitude) if location_data else None
+    except Exception as e:
+        print(f"Error: {e}")
+        return None
+
+async def get_historical_weather(latitude, longitude, date):
+    """
+    Fetches historical weather data for given coordinates and date.
+    Uses the same date from the previous year if current year's data is not available.
+    
+    Args:
+        latitude (float): Location latitude
+        longitude (float): Location longitude
+        date (str): Date in format 'YYYY-MM-DD'
+        
+    Returns:
+        dict: Weather data for the specified date
+    """
+    base_url = "https://archive-api.open-meteo.com/v1/archive"
+    
+    # Try current year first
+    params = {
+        "latitude": latitude,
+        "longitude": longitude,
+        "start_date": date,
+        "end_date": date,
+        "daily": "temperature_2m_max,temperature_2m_min,temperature_2m_mean,daylight_duration,rain_sum,snowfall_sum",
+        "timezone": "auto"
+    }
+    
+    try:
+        response = requests.get(base_url, params=params)
+        response.raise_for_status()
+        data = response.json()
+        
+        # If no data for current year, try previous year
+        if not data.get("daily", {}).get("time"):
+            prev_year = str(int(date[:4]) - 1)
+            prev_date = prev_year + date[4:]
+            params["start_date"] = prev_date
+            params["end_date"] = prev_date
+            response = requests.get(base_url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+        return data
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching weather data: {e}")
+        return None
+
+def format_weather_data(weather_data):
+    """Format weather data for display"""
+    if not weather_data or "daily" not in weather_data:
+        return "No weather data available"
+    
+    daily = weather_data["daily"]
+    dates = daily["time"]
+    max_temps = daily["temperature_2m_max"]
+    min_temps = daily["temperature_2m_min"]
+    precipitation = daily["precipitation_sum"]
+    
+    result = []
+    result.append(f"Weather data for {weather_data.get('timezone', 'Unknown timezone')}")
+    
+    for i in range(len(dates)):
+        result.append(f"Date: {dates[i]}, Max: {max_temps[i]}°C, Min: {min_temps[i]}°C, Precipitation: {precipitation[i]}mm")
+    
+    return "\n".join(result)
+
+class WeatherRequest(BaseModel):
+    location: str
+    days: int
+
 
 load_dotenv()
 API_KEY = os.getenv("GEMINI_KEY")
@@ -128,6 +208,14 @@ async def generate_itinerary(request: Request):
     budget = data.get("budget")
     number_of_people = data.get("numberofpeople")
 
+    # Get weather data for the destination
+    coords = get_coords(destination)
+    weather_data = None
+    if coords:
+        # Get weather for the first day of the trip
+        start_date = date_range[0] if isinstance(date_range, list) else date_range
+        weather_data = await get_historical_weather(coords[0], coords[1], start_date)
+
     system_instruction = """
         Generate a detailed, structured, and strictly valid JSON itinerary based on the input details provided below.
         How to write:
@@ -136,6 +224,8 @@ async def generate_itinerary(request: Request):
         - for transportation add all the modes of transportation possible for that day and that area. and mention how they will be linked with each other to reach the destination
         - make sure the estimated travel duration is taken into account to schedule the activities of the day if the transportation takes the whole day then make sure that no activities are scheduled for that day.
         - the extra suggestions should also include some common known fraudulent activities and places to avoid along with places to not miss.
+        - Consider the weather conditions when planning activities and suggesting appropriate events to attend.
+        
         INPUT PARAMETERS:
         - destination: [string] – Main destination of the trip.
         - path: [list of strings] – Specific places or areas to cover in the trip.
@@ -146,7 +236,7 @@ async def generate_itinerary(request: Request):
         - accomodations: [list of preferences] – Hotel or stay preferences.
         - restaurants: [list of preferences] – Preferred cuisines or restaurant types.
         - numberofpeople: [integer] – Number of travelers.
-
+        - weather_data: [object] – Weather information for the destination.        
         RESPONSE FORMAT RULES:
         - Output only valid JSON (do not wrap with triple backticks or Markdown).
         - The root structure must have:
@@ -193,7 +283,7 @@ async def generate_itinerary(request: Request):
                     "estimated_cost2": "Approximate cost in currency"
                 }],
             }],
-            "estimated_cost": "Approximate cost in currency"
+            "estimated_cost": "Approximate cost in currency",
         }
 
         "additional_suggestions" format:
@@ -201,8 +291,10 @@ async def generate_itinerary(request: Request):
             "events": ["Event 1", "Event 2"],
             "restaurants": ["Restaurant 1", "Restaurant 2"],
             "accomodations": ["Accommodation 1", "Accommodation 2"],
-            "transportation": ["Tip 1", "Tip 2"]
+            "transportation": ["Tip 1", "Tip 2"],
+            "weather_tips": ["Tip 1", "Tip 2"]
         }
+
 
         STRICT RULES:
         - Do NOT include markdown formatting like ```json.
@@ -210,11 +302,26 @@ async def generate_itinerary(request: Request):
         - Use the provided structure exactly.
         - Dates must fall within the given date_range.
         - Ensure recommendations are realistic for the destination and budget.
+        - Consider weather conditions when planning activities and suggesting gear.
 
         BEGIN.
         """
 
     user_prompt = system_instruction + "\n" + f"Source: {source}\nDestination: {destination}\nActivities to attend: {activities}\nDate range: {date_range}\nBudget: {budget}\nNumber of people: {number_of_people}"
+    
+    if weather_data and "daily" in weather_data:
+        daily = weather_data["daily"]
+        weather_info = f"""
+        Weather Information:
+        - Mean Temperature: {daily['temperature_2m_mean'][0]}°C
+        - Max Temperature: {daily['temperature_2m_max'][0]}°C
+        - Min Temperature: {daily['temperature_2m_min'][0]}°C
+        - Daylight Duration: {daily['daylight_duration'][0]} hours
+        - Rain: {daily['rain_sum'][0]}mm
+        - Snowfall: {daily['snowfall_sum'][0]}mm
+        """
+        user_prompt += "\n" + weather_info
+
     response = client.models.generate_content(
         model="gemini-2.0-flash",
         contents=user_prompt,
@@ -464,6 +571,68 @@ async def describe_image(file: UploadFile = File(...)):
                 "description": response.text
             }
             
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/weather/historical")
+async def get_historical_weather_data(request: WeatherRequest):
+    """
+    Get historical weather data for a location
+    """
+    try:
+        # Get coordinates
+        coords = get_coords(request.location)
+        if not coords:
+            return {
+                "error": f"Could not find coordinates for {request.location}",
+                "message": "Please check the location name and try again"
+            }
+        
+        # Validate and limit days
+        days = max(1, min(30, request.days))  # Limit to 1-30 days
+        
+        # Calculate date range
+        end_date = datetime.now().date()
+        start_date = end_date - timedelta(days=days-1)
+        
+        # Get weather data
+        weather = get_historical_weather(
+            coords[0], 
+            coords[1], 
+            start_date.strftime("%Y-%m-%d")
+        )
+        
+        if not weather:
+            return {
+                "error": "Failed to fetch weather data",
+                "message": "Please try again later"
+            }
+        
+        # Format the response
+        daily = weather["daily"]
+        formatted_data = {
+            "location": request.location,
+            "timezone": weather.get("timezone", "Unknown"),
+            "period": {
+                "start_date": start_date.strftime("%Y-%m-%d"),
+                "end_date": end_date.strftime("%Y-%m-%d")
+            },
+            "daily_data": [
+                {
+                    "date": daily["time"][i],
+                    "max_temperature": daily["temperature_2m_max"][i],
+                    "min_temperature": daily["temperature_2m_min"][i],
+                    "precipitation": daily["precipitation_sum"][i]
+                }
+                for i in range(len(daily["time"]))
+            ]
+        }
+        
+        return {
+            "message": "Weather data retrieved successfully",
+            "data": formatted_data
+        }
+        
     except Exception as e:
         return {"error": str(e)}
 
