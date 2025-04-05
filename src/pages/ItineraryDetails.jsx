@@ -33,6 +33,8 @@ function ItineraryDetails() {
   const [showMap, setShowMap] = useState(false);
   const [mapLocations, setMapLocations] = useState([]);
   const [budgetUpdated, setBudgetUpdated] = useState(false);
+  const [isAILoading, setIsAILoading] = useState(false); // Renamed local loading state
+  const [showSuggestions, setShowSuggestions] = useState(false); // State for suggestions visibility
 
   // Fetch itinerary data when ID changes or on first load
   useEffect(() => {
@@ -393,6 +395,21 @@ function ItineraryDetails() {
       });
   };
 
+  // Function to render suggestion items
+  const renderSuggestionList = (items, title) => {
+    if (!items || items.length === 0) return null;
+    return (
+      <div className="mb-3">
+        <h4 className="font-semibold text-sm mb-1">{title}</h4>
+        <ul className="list-disc list-inside space-y-1 text-xs">
+          {items.map((item, index) => (
+            <li key={index}>{typeof item === 'object' ? item.name || item.title || JSON.stringify(item) : item}</li>
+          ))}
+        </ul>
+      </div>
+    );
+  };
+
   // Conditional returns moved after all function definitions
   // Redirect if not authenticated
   if (!isAuthenticated) {
@@ -450,7 +467,7 @@ function ItineraryDetails() {
 
   // Main JSX return - moved to after all conditional returns
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4">
+    <div className="max-w-6xl mx-auto py-8 px-4 relative">
       {(error || localError) && (
         <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
           {error || localError}
@@ -470,7 +487,7 @@ function ItineraryDetails() {
                 value={editData.title}
                 onChange={handleEditChange}
                 className="text-3xl font-bold border-b-2 border-indigo-500 focus:outline-none"
-                disabled={isLoading}
+                disabled={isAILoading}
               />
             ) : (
               <h1 className="text-3xl font-bold">{itinerary?.title}</h1>
@@ -503,14 +520,14 @@ function ItineraryDetails() {
               <button
                 onClick={handleSave}
                 className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:bg-green-300"
-                disabled={isLoading}
+                disabled={isAILoading}
               >
                 Save
               </button>
               <button
                 onClick={() => setIsEditing(false)}
                 className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300 disabled:bg-gray-100"
-                disabled={isLoading}
+                disabled={isAILoading}
               >
                 Cancel
               </button>
@@ -546,7 +563,7 @@ function ItineraryDetails() {
                   value={editData.destination}
                   onChange={handleEditChange}
                   className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  disabled={isLoading}
+                  disabled={isAILoading}
                 />
               ) : (
                 <p className="text-lg font-medium">{destinationName}</p>
@@ -563,7 +580,7 @@ function ItineraryDetails() {
                     value={editData.startDate}
                     onChange={handleEditChange}
                     className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    disabled={isLoading}
+                    disabled={isAILoading}
                   />
                   <span className="flex items-center">to</span>
                   <input
@@ -572,7 +589,7 @@ function ItineraryDetails() {
                     value={editData.endDate}
                     onChange={handleEditChange}
                     className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    disabled={isLoading}
+                    disabled={isAILoading}
                   />
                 </div>
               ) : (
@@ -592,7 +609,7 @@ function ItineraryDetails() {
                 onChange={handleEditChange}
                 rows="3"
                 className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                disabled={isLoading}
+                disabled={isAILoading}
               ></textarea>
             ) : (
               <p className="text-gray-700">{itinerary?.description || 'No description provided.'}</p>
@@ -609,7 +626,7 @@ function ItineraryDetails() {
                   checked={editData.isPrivate}
                   onChange={handleEditChange}
                   className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  disabled={isLoading}
+                  disabled={isAILoading}
                 />
                 <label 
                   htmlFor="isPrivate" 
@@ -689,14 +706,14 @@ function ItineraryDetails() {
           <button
             onClick={generateInitialDays}
             className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
-            disabled={isLoading}
+            disabled={isAILoading}
           >
             Generate Days with AI
           </button>
           <button
             onClick={handleAddDay}
             className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
-            disabled={isLoading}
+            disabled={isAILoading}
           >
             Add Day Manually
           </button>
@@ -746,6 +763,43 @@ function ItineraryDetails() {
             ))}
           </ul>
         </div>
+      )}
+
+      {/* Suggestions Floating Button and Panel */}
+      {itinerary.additionalSuggestions && Object.keys(itinerary.additionalSuggestions).length > 0 && (
+        <>
+          {/* Floating Button */}
+          <button
+            onClick={() => setShowSuggestions(!showSuggestions)}
+            className="fixed bottom-6 right-6 bg-purple-600 text-white p-3 rounded-full shadow-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 z-50"
+            aria-label="Toggle Suggestions"
+          >
+            {showSuggestions ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M12 18.75a6.75 6.75 0 100-13.5 6.75 6.75 0 000 13.5z" />
+              </svg>
+            )}
+          </button>
+
+          {/* Suggestions Panel */}
+          {showSuggestions && (
+            <div className="fixed bottom-20 right-6 w-64 max-h-80 overflow-y-auto bg-white p-4 rounded-lg shadow-xl border border-gray-200 z-40">
+              <h3 className="text-lg font-semibold mb-3 border-b pb-2">Additional Suggestions</h3>
+              {renderSuggestionList(itinerary.additionalSuggestions.events, '📅 Events')}
+              {renderSuggestionList(itinerary.additionalSuggestions.restaurants, '🍽️ Restaurants')}
+              {renderSuggestionList(itinerary.additionalSuggestions.accomodations, '🏨 Accommodations')}
+              {renderSuggestionList(itinerary.additionalSuggestions.transportation, '🚌 Transportation')}
+              {renderSuggestionList(itinerary.additionalSuggestions.weather_tips, '☀️ Weather Tips')}
+              {renderSuggestionList(itinerary.additionalSuggestions.fraud_avoidance, '🛡️ Fraud Avoidance')}
+              {renderSuggestionList(itinerary.additionalSuggestions.places_to_avoid, '🚫 Places to Avoid')}
+              {renderSuggestionList(itinerary.additionalSuggestions.places_not_to_miss, '⭐ Places Not to Miss')}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
