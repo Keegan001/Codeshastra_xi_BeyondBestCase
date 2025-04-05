@@ -15,10 +15,8 @@ function GroupItineraryMembers({ itinerary, isOwner }) {
   const [showJoinRequests, setShowJoinRequests] = useState(false);
   const [isLoadingRequests, setIsLoadingRequests] = useState(false);
   const [publiclyJoinable, setPubliclyJoinable] = useState(false);
+  const [collaborators, setCollaborators] = useState([]);
 
-  // Extract collaborators safely
-  const collaborators = itinerary?.collaborators || [];
-  
   // Get itinerary ID (handle different API formats)
   const itineraryId = itinerary?.id || itinerary?._id || itinerary?.uuid;
   
@@ -141,6 +139,41 @@ function GroupItineraryMembers({ itinerary, isOwner }) {
     }
   };
   
+  // Load collaborators from the itinerary
+  useEffect(() => {
+    if (itinerary) {
+      // Make sure collaborators exists and is an array
+      const collaboratorsList = itinerary.collaborators || [];
+      
+      if (Array.isArray(collaboratorsList)) {
+        setCollaborators(collaboratorsList.map(collab => {
+          // Handle case where user object might be missing
+          if (!collab || !collab.user) {
+            console.warn('Collaborator or user object is missing', collab);
+            return {
+              userId: collab?._id || 'unknown',
+              name: 'Unknown User',
+              email: '',
+              role: collab?.role || 'viewer',
+              id: collab?._id || collab?.id || 'unknown'
+            };
+          }
+          
+          return {
+            userId: collab.user._id || collab.user.id || collab.user, // Handle different possible formats
+            name: collab.user.name || collab.user.username || 'Unknown',
+            email: collab.user.email || '',
+            role: collab.role || 'viewer',
+            id: collab._id || collab.id // The collaborator record ID
+          };
+        }));
+      } else {
+        console.error('Collaborators is not an array:', collaboratorsList);
+        setCollaborators([]);
+      }
+    }
+  }, [itinerary]);
+  
   // If not the owner, just show the list of collaborators
   if (!isOwner) {
     return (
@@ -153,14 +186,25 @@ function GroupItineraryMembers({ itinerary, isOwner }) {
           ) : (
             <ul className="divide-y divide-gray-200">
               {collaborators.map(collaborator => (
-                <li key={collaborator.user._id || collaborator.user.id} className="py-3 flex justify-between items-center">
+                <li key={collaborator.userId} className="py-3 flex justify-between items-center">
                   <div>
-                    <p className="font-medium">{collaborator.user.name || collaborator.user.email}</p>
-                    <p className="text-sm text-gray-500">{collaborator.user.email}</p>
+                    <p className="font-medium">{collaborator.name}</p>
+                    <p className="text-sm text-gray-500">{collaborator.email}</p>
                   </div>
-                  <span className="px-2 py-1 text-xs rounded-full bg-indigo-100 text-indigo-800">
-                    {collaborator.role === 'editor' ? 'Editor' : 'Viewer'}
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className="px-2 py-1 text-xs rounded-full bg-indigo-100 text-indigo-800">
+                      {collaborator.role === 'editor' ? 'Editor' : 'Viewer'}
+                    </span>
+                    <button
+                      onClick={() => handleRemoveCollaborator(collaborator.id)}
+                      className="text-red-600 hover:text-red-800"
+                      title="Remove member"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
                 </li>
               ))}
             </ul>
@@ -244,17 +288,17 @@ function GroupItineraryMembers({ itinerary, isOwner }) {
           ) : (
             <ul className="divide-y divide-gray-200">
               {collaborators.map(collaborator => (
-                <li key={collaborator.user._id || collaborator.user.id} className="py-3 flex justify-between items-center">
+                <li key={collaborator.userId} className="py-3 flex justify-between items-center">
                   <div>
-                    <p className="font-medium">{collaborator.user.name || collaborator.user.email}</p>
-                    <p className="text-sm text-gray-500">{collaborator.user.email}</p>
+                    <p className="font-medium">{collaborator.name}</p>
+                    <p className="text-sm text-gray-500">{collaborator.email}</p>
                   </div>
                   <div className="flex items-center space-x-2">
                     <span className="px-2 py-1 text-xs rounded-full bg-indigo-100 text-indigo-800">
                       {collaborator.role === 'editor' ? 'Editor' : 'Viewer'}
                     </span>
                     <button
-                      onClick={() => handleRemoveCollaborator(collaborator.user._id || collaborator.user.id)}
+                      onClick={() => handleRemoveCollaborator(collaborator.id)}
                       className="text-red-600 hover:text-red-800"
                       title="Remove member"
                     >

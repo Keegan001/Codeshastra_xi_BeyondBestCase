@@ -126,6 +126,12 @@ function ItineraryDetails() {
   const isUserOwnerOrEditor = () => {
     if (!itinerary || !user) return false;
     
+    // Check if owner exists
+    if (!itinerary.owner) {
+      console.warn('Itinerary owner is undefined');
+      return false;
+    }
+    
     // Convert IDs to strings for comparison
     const ownerId = itinerary.owner._id?.toString() || itinerary.owner.id?.toString() || itinerary.owner.toString();
     const userId = user._id?.toString() || user.id?.toString();
@@ -136,6 +142,7 @@ function ItineraryDetails() {
     // Check if user is an editor collaborator
     const isEditorCollaborator = itinerary.collaborators?.some(
       c => {
+        if (!c.user) return false;
         const collaboratorId = c.user._id?.toString() || c.user.id?.toString() || c.user.toString();
         return collaboratorId === userId && c.role === 'editor';
       }
@@ -446,12 +453,12 @@ function ItineraryDetails() {
     );
   }
 
-  // Handle case where itinerary is not found
-  if (!isLoading && !itinerary) {
+  // Handle case where itinerary is not found or is loading data like owner
+  if (!isLoading && (!itinerary || !itinerary.owner)) {
     return (
       <div className="max-w-4xl mx-auto py-8 px-4">
         <div className="bg-yellow-100 text-yellow-700 p-4 rounded-lg mb-6">
-          Itinerary not found or you don't have access to it.
+          {!itinerary ? "Itinerary not found or you don't have access to it." : "Loading itinerary data..."}
         </div>
         <div className="text-center">
           <button
