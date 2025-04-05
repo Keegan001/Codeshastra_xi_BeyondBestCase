@@ -32,6 +32,22 @@ function resetPassword({ token, password }) {
     .then(response => response.data)
 }
 
+function requestOTP(email) {
+  return api.post('/auth/request-otp', { email })
+    .then(response => response.data)
+}
+
+function verifyOTP(email, otp) {
+  return api.post('/auth/verify-otp', { email, otp })
+    .then(response => {
+      const { token, user } = response.data
+      // Store token in localStorage
+      localStorage.setItem('token', token)
+      localStorage.setItem('user', JSON.stringify(user))
+      return response.data
+    })
+}
+
 function refreshToken() {
   const token = localStorage.getItem('token')
   if (!token) return Promise.reject('No refresh token available')
@@ -71,6 +87,8 @@ export {
   register,
   forgotPassword,
   resetPassword,
+  requestOTP,
+  verifyOTP,
   refreshToken,
   logout,
   getCurrentUser,

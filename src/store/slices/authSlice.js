@@ -41,6 +41,28 @@ export const logoutUser = createAsyncThunk(
   }
 )
 
+export const requestOTP = createAsyncThunk(
+  'auth/requestOTP',
+  async ({ email }, { rejectWithValue }) => {
+    try {
+      return await authService.requestOTP(email)
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to send OTP')
+    }
+  }
+)
+
+export const verifyOTP = createAsyncThunk(
+  'auth/verifyOTP',
+  async ({ email, otp }, { rejectWithValue }) => {
+    try {
+      return await authService.verifyOTP(email, otp)
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'OTP verification failed')
+    }
+  }
+)
+
 // Auth slice
 const authSlice = createSlice({
   name: 'auth',
@@ -86,6 +108,34 @@ const authSlice = createSlice({
       .addCase(logoutUser.fulfilled, (state) => {
         state.isAuthenticated = false
         state.user = null
+      })
+      
+      // Request OTP cases
+      .addCase(requestOTP.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(requestOTP.fulfilled, (state) => {
+        state.isLoading = false
+      })
+      .addCase(requestOTP.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload
+      })
+      
+      // Verify OTP cases
+      .addCase(verifyOTP.pending, (state) => {
+        state.isLoading = true
+        state.error = null
+      })
+      .addCase(verifyOTP.fulfilled, (state, action) => {
+        state.isLoading = false
+        state.isAuthenticated = true
+        state.user = action.payload.user
+      })
+      .addCase(verifyOTP.rejected, (state, action) => {
+        state.isLoading = false
+        state.error = action.payload
       })
   }
 })
