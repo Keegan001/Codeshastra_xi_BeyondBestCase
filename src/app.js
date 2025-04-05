@@ -1,4 +1,5 @@
 import express from 'express';
+import http from 'http';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -7,9 +8,16 @@ import compression from 'compression';
 import routes from './routes/index.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import config from './config/index.js';
+import websocketService from './services/websocket.service.js';
 
 // Initialize Express app
 const app = express();
+
+// Create HTTP server
+const server = http.createServer(app);
+
+// Initialize WebSocket
+websocketService.initialize(server);
 
 // Middleware
 app.use(helmet());
@@ -54,7 +62,7 @@ const connectAndStartServer = async () => {
   try {
     await mongoose.connect(config.mongodbUri);
     console.log('Connected to MongoDB');
-    app.listen(config.port, () => {
+    server.listen(config.port, () => {
       console.log(`Server running on port ${config.port} in ${config.nodeEnv} mode ${mongoose.connection.host}`);
     });
   } catch (err) {

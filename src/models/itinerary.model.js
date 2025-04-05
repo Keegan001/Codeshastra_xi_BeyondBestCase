@@ -57,6 +57,50 @@ const joinRequestSchema = new mongoose.Schema({
   }
 });
 
+const expenseMemberSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  amount: {
+    type: Number,
+    default: 0
+  },
+  paid: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const expenseSchema = new mongoose.Schema({
+  title: {
+    type: String,
+    trim: true
+  },
+  amount: {
+    type: Number,
+    required: true
+  },
+  paidBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  members: [expenseMemberSchema],
+  category: {
+    type: String,
+    enum: ['accommodation', 'food', 'transport', 'attraction', 'other'],
+    default: 'other'
+  },
+  date: {
+    type: Date,
+    default: Date.now
+  },
+  notes: {
+    type: String,
+    trim: true
+  }
+});
+
 const itinerarySchema = new mongoose.Schema(
   {
     uuid: {
@@ -87,6 +131,11 @@ const itinerarySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
       description: 'Flag to indicate if users can request to join this itinerary'
+    },
+    source: {
+      type: String,
+      trim: true,
+      description: 'Where the user heard about the service'
     },
     destination: {
       name: {
@@ -121,6 +170,10 @@ const itinerarySchema = new mongoose.Schema(
         type: Number,
         default: 0
       },
+      perPerson: {
+        type: Number,
+        default: 0
+      },
       spent: {
         type: Number,
         default: 0
@@ -129,7 +182,12 @@ const itinerarySchema = new mongoose.Schema(
         type: Map,
         of: Number,
         default: {}
-      }
+      },
+      isSplitwiseEnabled: {
+        type: Boolean,
+        default: false
+      },
+      expenses: [expenseSchema]
     },
     transportation: {
       mode: {
@@ -158,6 +216,17 @@ itinerarySchema.index({ isPrivate: 1 }); // Index for querying public itinerarie
 // Method to get the public ID (UUID)
 itinerarySchema.methods.getPublicId = function() {
   return this.uuid;
+};
+
+// Method to calculate per person budget
+itinerarySchema.methods.calculatePerPersonBudget = function() {
+  const totalMembers = 1 + (this.collaborators ? this.collaborators.length : 0);
+  if (totalMembers > 0 && this.budget.total > 0) {
+    this.budget.perPerson = this.budget.total / totalMembers;
+  } else {
+    this.budget.perPerson = 0;
+  }
+  return this.budget.perPerson;
 };
 
 export const Itinerary = mongoose.model('Itinerary', itinerarySchema);

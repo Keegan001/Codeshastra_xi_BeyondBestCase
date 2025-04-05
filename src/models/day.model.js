@@ -1,6 +1,23 @@
 import mongoose from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 
+const commentSchema = new mongoose.Schema({
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  text: {
+    type: String,
+    required: true,
+    trim: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
 const daySchema = new mongoose.Schema(
   {
     uuid: {
@@ -22,7 +39,8 @@ const daySchema = new mongoose.Schema(
     notes: {
       type: String,
       trim: true
-    }
+    },
+    comments: [commentSchema]
   },
   { timestamps: true }
 );

@@ -52,7 +52,8 @@ const createItinerarySchema = Joi.object({
   dateRange: dateRangeSchema.required(),
   budget: budgetSchema,
   transportation: transportationSchema,
-  generateDays: Joi.boolean().default(true)
+  generateDays: Joi.boolean().default(true),
+  source: Joi.string().max(200)
 });
 
 const updateItinerarySchema = Joi.object({

@@ -26,7 +26,8 @@ class ItineraryService {
           end: itineraryData.dateRange ? new Date(itineraryData.dateRange.end) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         },
         transportation: itineraryData.transportation || { mode: 'mixed' },
-        budget: itineraryData.budget || { currency: 'USD', total: 0, spent: 0 }
+        budget: itineraryData.budget || { currency: 'USD', total: 0, spent: 0 },
+        source: itineraryData.source || ''
       });
 
       // Add route locations if provided
@@ -820,13 +821,45 @@ class ItineraryService {
         
         await day.save();
         
+        // Parse estimated cost if available
+        let costAmount = 0;
+        let costCurrency = 'USD';
+        
+        if (dayData.estimated_cost) {
+          // Parse the estimated cost string (e.g., "INR 7000-13000")
+          try {
+            const costString = dayData.estimated_cost;
+            // Extract currency and amount
+            const regex = /([A-Za-z]+)\s*(\d+)(?:-(\d+))?/;
+            const match = costString.match(regex);
+            
+            if (match) {
+              costCurrency = match[1] || 'USD';
+              // If there's a range, take the average or the first value
+              if (match[3]) {
+                const min = parseInt(match[2]);
+                const max = parseInt(match[3]);
+                costAmount = Math.floor((min + max) / 2);
+              } else {
+                costAmount = parseInt(match[2]);
+              }
+            }
+          } catch (error) {
+            console.error(`Error parsing estimated cost: ${dayData.estimated_cost}`, error);
+          }
+        }
+        
         // Add activities
         if (dayData.activities && Array.isArray(dayData.activities)) {
           for (const activityTitle of dayData.activities) {
             const activity = new Activity({
               title: activityTitle,
               type: 'other', // Default type
-              day: day._id
+              day: day._id,
+              cost: {
+                amount: costAmount / dayData.activities.length, // Distribute cost among activities
+                currency: costCurrency
+              }
             });
             
             await activity.save();
@@ -837,11 +870,35 @@ class ItineraryService {
         // Add accommodation as activity if available
         if (dayData.accomodations && Array.isArray(dayData.accomodations) && dayData.accomodations.length > 0) {
           for (const accommodation of dayData.accomodations) {
+            let accomCost = { amount: 0, currency: costCurrency };
+            
+            // Try to parse the price range if available
+            if (accommodation.price_range) {
+              try {
+                const priceRegex = /([A-Za-z]+)\s*(\d+)(?:-(\d+))?/;
+                const priceMatch = accommodation.price_range.match(priceRegex);
+                
+                if (priceMatch) {
+                  accomCost.currency = priceMatch[1] || costCurrency;
+                  if (priceMatch[3]) {
+                    const min = parseInt(priceMatch[2]);
+                    const max = parseInt(priceMatch[3]);
+                    accomCost.amount = Math.floor((min + max) / 2);
+                  } else {
+                    accomCost.amount = parseInt(priceMatch[2]);
+                  }
+                }
+              } catch (error) {
+                console.error(`Error parsing accommodation price: ${accommodation.price_range}`, error);
+              }
+            }
+            
             const activity = new Activity({
               title: `Stay at ${accommodation.name}`,
               type: 'accommodation',
               day: day._id,
-              notes: `Price Range: ${accommodation.price_range || 'N/A'}`
+              notes: `Price Range: ${accommodation.price_range || 'N/A'}`,
+              cost: accomCost
             });
             
             await activity.save();
@@ -852,11 +909,35 @@ class ItineraryService {
         // Add restaurants as activities if available
         if (dayData.restaurants && Array.isArray(dayData.restaurants) && dayData.restaurants.length > 0) {
           for (const restaurant of dayData.restaurants) {
+            let foodCost = { amount: 0, currency: costCurrency };
+            
+            // Try to parse the price range if available
+            if (restaurant.price_range) {
+              try {
+                const priceRegex = /([A-Za-z]+)\s*(\d+)(?:-(\d+))?/;
+                const priceMatch = restaurant.price_range.match(priceRegex);
+                
+                if (priceMatch) {
+                  foodCost.currency = priceMatch[1] || costCurrency;
+                  if (priceMatch[3]) {
+                    const min = parseInt(priceMatch[2]);
+                    const max = parseInt(priceMatch[3]);
+                    foodCost.amount = Math.floor((min + max) / 2);
+                  } else {
+                    foodCost.amount = parseInt(priceMatch[2]);
+                  }
+                }
+              } catch (error) {
+                console.error(`Error parsing restaurant price: ${restaurant.price_range}`, error);
+              }
+            }
+            
             const activity = new Activity({
               title: `Eat at ${restaurant.name}`,
               type: 'food',
               day: day._id,
-              notes: `Cuisine: ${restaurant.cuisine || 'N/A'}, Price Range: ${restaurant.price_range || 'N/A'}`
+              notes: `Cuisine: ${restaurant.cuisine || 'N/A'}, Price Range: ${restaurant.price_range || 'N/A'}`,
+              cost: foodCost
             });
             
             await activity.save();
@@ -870,11 +951,98 @@ class ItineraryService {
             const activity = new Activity({
               title: eventTitle,
               type: 'other',
-              day: day._id
+              day: day._id,
+              cost: {
+                amount: costAmount / (dayData.events.length + (dayData.activities ? dayData.activities.length : 0)),
+                currency: costCurrency
+              }
             });
             
             await activity.save();
             day.activities.push(activity._id);
+          }
+        }
+        
+        // Add transportation as activities if available
+        if (dayData.transportation && Array.isArray(dayData.transportation) && dayData.transportation.length > 0) {
+          for (const transport of dayData.transportation) {
+            // Handle transportation route 1
+            if (transport.transportation_route1 && Array.isArray(transport.transportation_route1)) {
+              for (const leg of transport.transportation_route1) {
+                let transportCost = { amount: 0, currency: costCurrency };
+                
+                // Try to parse the estimated cost if available
+                if (leg.estimated_cost1) {
+                  try {
+                    const costRegex = /([A-Za-z]+)\s*(\d+)(?:-(\d+))?/;
+                    const costMatch = leg.estimated_cost1.match(costRegex);
+                    
+                    if (costMatch) {
+                      transportCost.currency = costMatch[1] || costCurrency;
+                      if (costMatch[3]) {
+                        const min = parseInt(costMatch[2]);
+                        const max = parseInt(costMatch[3]);
+                        transportCost.amount = Math.floor((min + max) / 2);
+                      } else {
+                        transportCost.amount = parseInt(costMatch[2]);
+                      }
+                    }
+                  } catch (error) {
+                    console.error(`Error parsing transportation cost: ${leg.estimated_cost1}`, error);
+                  }
+                }
+                
+                const activity = new Activity({
+                  title: leg.transportation_mode1 || 'Transportation',
+                  type: 'transport',
+                  day: day._id,
+                  notes: `Duration: ${leg.transportation_duration1 || 'N/A'}, Distance: ${leg.transportation_distance1 || 'N/A'}`,
+                  cost: transportCost
+                });
+                
+                await activity.save();
+                day.activities.push(activity._id);
+              }
+            }
+            
+            // Handle transportation route 2 if present
+            if (transport.transportation_route2 && Array.isArray(transport.transportation_route2)) {
+              for (const leg of transport.transportation_route2) {
+                let transportCost = { amount: 0, currency: costCurrency };
+                
+                // Try to parse the estimated cost if available
+                if (leg.estimated_cost1) {
+                  try {
+                    const costRegex = /([A-Za-z]+)\s*(\d+)(?:-(\d+))?/;
+                    const costMatch = leg.estimated_cost1.match(costRegex);
+                    
+                    if (costMatch) {
+                      transportCost.currency = costMatch[1] || costCurrency;
+                      if (costMatch[3]) {
+                        const min = parseInt(costMatch[2]);
+                        const max = parseInt(costMatch[3]);
+                        transportCost.amount = Math.floor((min + max) / 2);
+                      } else {
+                        transportCost.amount = parseInt(costMatch[2]);
+                      }
+                    }
+                  } catch (error) {
+                    console.error(`Error parsing transportation cost: ${leg.estimated_cost1}`, error);
+                  }
+                }
+                
+                const activity = new Activity({
+                  title: leg.transportation_mode1 || 'Alternative Transportation',
+                  type: 'transport',
+                  day: day._id,
+                  notes: `Duration: ${leg.transportation_duration1 || 'N/A'}, Distance: ${leg.transportation_distance1 || 'N/A'}`,
+                  cost: transportCost
+                });
+                
+                await activity.save();
+                day.activities.push(activity._id);
+              }
+            }
           }
         }
         
