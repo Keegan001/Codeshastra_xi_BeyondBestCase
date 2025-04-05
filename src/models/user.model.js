@@ -33,7 +33,11 @@ const userSchema = new mongoose.Schema(
       default: {}
     },
     resetPasswordToken: String,
-    resetPasswordExpires: Date
+    resetPasswordExpires: Date,
+    otp: {
+      code: String,
+      expiresAt: Date
+    }
   },
   { timestamps: true }
 );
@@ -64,6 +68,7 @@ userSchema.methods.toJSON = function() {
   delete userObject.password;
   delete userObject.resetPasswordToken;
   delete userObject.resetPasswordExpires;
+  delete userObject.otp;
   return userObject;
 };
 

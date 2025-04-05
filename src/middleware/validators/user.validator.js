@@ -19,6 +19,18 @@ const loginUserSchema = Joi.object({
   password: Joi.string().required()
 });
 
+// Request OTP schema
+const requestOTPSchema = Joi.object({
+  email: Joi.string().email().required()
+});
+
+// Verify OTP schema
+const verifyOTPSchema = Joi.object({
+  email: Joi.string().email().required(),
+  otp: Joi.string().required().length(6).pattern(/^\d+$/)
+    .message('OTP must be a 6-digit number')
+});
+
 // Password reset request schema
 const forgotPasswordSchema = Joi.object({
   email: Joi.string().email().required()
@@ -60,6 +72,8 @@ const changePasswordSchema = Joi.object({
 export default {
   registerUser: registerUserSchema,
   loginUser: loginUserSchema,
+  requestOTP: requestOTPSchema,
+  verifyOTP: verifyOTPSchema,
   forgotPassword: forgotPasswordSchema,
   resetPassword: resetPasswordSchema,
   updateProfile: updateProfileSchema,

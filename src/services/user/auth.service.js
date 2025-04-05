@@ -2,6 +2,10 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import {User} from '../../models/user.model.js';
 import { ApiError } from '../../middleware/errorHandler.js';
+import emailService from './email.service.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 /**
  * AuthService - Handles authentication operations
@@ -68,6 +72,72 @@ class AuthService {
     // Generate token
     const token = this.generateToken(user);
 
+    return { user, token };
+  }
+
+  /**
+   * Generate and send OTP for login
+   * @param {String} email - User email
+   * @returns {Boolean} Success status
+   */
+  async generateAndSendOTP(email) {
+    // Find user by email
+    const user = await User.findOne({ email });
+    console.log(user);
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+
+    // Generate a 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Set OTP and expiry (10 minutes)
+    user.otp = {
+      code: otp,
+      expiresAt: new Date(Date.now() + 10 * 60 * 1000) // 10 minutes
+    };
+    
+    await user.save();
+    
+    // Send OTP email
+    return emailService.sendOTPEmail(email, otp);
+  }
+
+  /**
+   * Verify OTP and login user
+   * @param {String} email - User email
+   * @param {String} otp - The OTP code to verify
+   * @returns {Object} User object and token
+   */
+  async verifyOTPAndLogin(email, otp) {
+    // Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw ApiError.notFound('User not found');
+    }
+    
+    // Check if OTP exists and is valid
+    if (!user.otp || !user.otp.code || !user.otp.expiresAt) {
+      throw ApiError.badRequest('No OTP was requested');
+    }
+    
+    // Check if OTP has expired
+    if (user.otp.expiresAt < new Date()) {
+      throw ApiError.badRequest('OTP has expired');
+    }
+    
+    // Check if OTP matches
+    if (user.otp.code !== otp) {
+      throw ApiError.unauthorized('Invalid OTP');
+    }
+    
+    // Clear OTP after successful verification
+    user.otp = null;
+    await user.save();
+    
+    // Generate token
+    const token = this.generateToken(user);
+    
     return { user, token };
   }
 

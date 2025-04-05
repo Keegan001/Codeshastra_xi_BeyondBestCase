@@ -45,6 +45,46 @@ class AuthController {
   }
 
   /**
+   * Request OTP for login
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   * @param {Function} next - Express next middleware function
+   */
+  async requestLoginOTP(req, res, next) {
+    try {
+      const { email } = req.body;
+      console.log(email);
+      await authService.generateAndSendOTP(email);
+      res.status(200).json({
+        message: 'OTP sent to your email',
+        email
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Verify OTP and login user
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   * @param {Function} next - Express next middleware function
+   */
+  async verifyLoginOTP(req, res, next) {
+    try {
+      const { email, otp } = req.body;
+      const { user, token } = await authService.verifyOTPAndLogin(email, otp);
+      res.status(200).json({
+        message: 'OTP verified successfully',
+        user,
+        token
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Request password reset
    * @param {Object} req - Express request object
    * @param {Object} res - Express response object

@@ -19,6 +19,20 @@ router.post(
   authController.login
 );
 
+// Request OTP for login
+router.post(
+  '/request-otp',
+  validateRequest('requestOTP'),
+  authController.requestLoginOTP
+);
+
+// Verify OTP and login
+router.post(
+  '/verify-otp',
+  validateRequest('verifyOTP'),
+  authController.verifyLoginOTP
+);
+
 // Request password reset
 router.post(
   '/forgot-password',
