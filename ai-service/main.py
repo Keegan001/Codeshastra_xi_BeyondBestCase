@@ -45,38 +45,41 @@ async def generate_itinerary(request: Request):
     number_of_people = data.get("numberofpeople")
 
     user_prompt = f"""
-    Please create a travel itinerary with the following details:
-    - Destination: {destination}
-    - Path: {path}
-    - Activities to Attend: {activities}
-    - Trip Length: {trip_length} days
-    - Date Range: {date_range}
-    - Budget: {budget}
-    - Accomodations: {accomodations}
-    - Restaurants: {restaurants}
-    - Number of People: {number_of_people}
+        You are a travel itinerary planner AI. Generate a detailed, structured, and strictly valid JSON itinerary based on the input details provided below.
 
-    The output should strictly follow this JSON format:
-    {{
-        "day_wise_plan":[
-            {{
-                "day": "Day 1",
-                "destination": "Destination 1",
-                "activities": ["Activity 1", "Activity 2"],
-                "accomodations": ["Accomodation 1", "Accomodation 2"],
-                "restaurants": ["Restaurant 1", "Restaurant 2"],
-                "events": ["Event 1", "Event 2"],
-                "transportation": ["Transportation 1", "Transportation 2"],
-                "estimated_cost": "Estimated cost of the day"
-            }}
-        ],
-        "additional_suggestions": {{
-            "events": ["Event 1", "Event 2"],
-            "restaurants": ["Restaurant 1", "Restaurant 2"],
-            "accomodations": ["Accomodation 1", "Accomodation 2"],
-            "transportation": ["Transportation 1", "Transportation 2"]
-        }}
-    }}
+        INPUT PARAMETERS:
+        - destination: [string] – Main destination of the trip.
+        - path: [list of strings] – Specific places or areas to cover in the trip.
+        - activities_to_attend: [list of strings] – Desired activities.
+        - trip_length: [integer] – Number of days for the trip.
+        - date_range: [start_date, end_date] – Date range for the trip.
+        - budget: [string] – Total budget for the entire trip.
+        - accomodations: [list of preferences] – Hotel or stay preferences.
+        - restaurants: [list of preferences] – Preferred cuisines or restaurant types.
+        - numberofpeople: [integer] – Number of travelers.
+
+        RESPONSE FORMAT RULES:
+        - Output only valid JSON (do not wrap with triple backticks or any Markdown).
+        - The root structure must have:
+        - `day_wise_plan`: an array of objects, one for each day.
+        - `additional_suggestions`: an object with more recommendations.
+
+        DAY-WISE PLAN FORMAT:
+        ```json
+        "day_wise_plan": [
+        {
+            "day": "Day 1 (YYYY-MM-DD)",
+            "destination": "Specific places for this day",
+            "activities": ["Activity 1", "Activity 2"],
+            "accomodations": ["Hotel 1"],
+            "restaurants": ["Restaurant 1"],
+            "events": ["Event 1", "Event 2"],  // Optional events for that date
+            "transportation": ["Transport method(s)"],
+            "estimated_cost": "Approximate cost of the day (in local currency)"
+        },
+        ...
+        ]
+
     """
 
     response = client.models.generate_content(
