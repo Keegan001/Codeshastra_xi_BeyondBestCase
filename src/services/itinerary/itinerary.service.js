@@ -1,6 +1,6 @@
-const { Itinerary, Day, Activity } = require('../../models');
-const { ApiError } = require('../../middleware/errorHandler');
-const mongoose = require('mongoose');
+import { Itinerary, Day, Activity } from '../../models/index.js';
+import { ApiError } from '../../middleware/errorHandler.js';
+import mongoose from 'mongoose';
 
 /**
  * ItineraryService - Handles itinerary-related operations
@@ -391,4 +391,4 @@ class ItineraryService {
   }
 }
 
-module.exports = new ItineraryService(); 
+export default new ItineraryService(); 

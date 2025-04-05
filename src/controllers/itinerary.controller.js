@@ -1,7 +1,7 @@
-const itineraryService = require('../services/itinerary/itinerary.service');
-const dayService = require('../services/itinerary/day.service');
-const { ApiResponse } = require('../middleware/apiResponse');
-const { ApiError } = require('../middleware/errorHandler');
+import itineraryService from '../services/itinerary/itinerary.service.js';
+import dayService from '../services/itinerary/day.service.js';
+import { ApiResponse } from '../middleware/apiResponse.js';
+import { ApiError } from '../middleware/errorHandler.js';
 
 /**
  * ItineraryController - Handles itinerary-related API endpoints
@@ -268,4 +268,4 @@ class ItineraryController {
   }
 }
 
-module.exports = new ItineraryController(); 
+export default new ItineraryController(); 

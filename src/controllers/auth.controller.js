@@ -1,5 +1,5 @@
-const authService = require('../services/user/auth.service');
-const { ApiError } = require('../middleware/errorHandler');
+import authService from '../services/user/auth.service.js';
+import { ApiError } from '../middleware/errorHandler.js';
 
 /**
  * AuthController - Handles authentication-related requests
@@ -106,4 +106,4 @@ class AuthController {
   }
 }
 
-module.exports = new AuthController(); 
+export default new AuthController(); 

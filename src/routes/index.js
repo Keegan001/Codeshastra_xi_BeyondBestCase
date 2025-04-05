@@ -1,7 +1,9 @@
-const router = require('express').Router();
-const authRoutes = require('./auth.routes');
-const userRoutes = require('./user.routes');
-const itineraryRoutes = require('./itinerary.routes');
+import express from 'express';
+import authRoutes from './auth.routes.js';
+import userRoutes from './user.routes.js';
+import itineraryRoutes from './itinerary.routes.js';
+
+const router = express.Router();
 
 // Health check endpoint
 router.get('/health', (req, res) => {
@@ -17,4 +19,4 @@ router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/itineraries', itineraryRoutes);
 
-module.exports = router; 
+export default router; 

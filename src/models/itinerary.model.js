@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
+import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
 const pointSchema = new mongoose.Schema({
   type: {
@@ -118,7 +118,6 @@ const itinerarySchema = new mongoose.Schema(
 
 // Index for efficient queries
 itinerarySchema.index({ owner: 1 });
-itinerarySchema.index({ uuid: 1 });
 itinerarySchema.index({ 'destination.location': '2dsphere' });
 
 // Method to get the public ID (UUID)
@@ -136,6 +135,5 @@ itinerarySchema.pre('save', function(next) {
   next();
 });
 
-const Itinerary = mongoose.model('Itinerary', itinerarySchema);
+export const Itinerary = mongoose.model('Itinerary', itinerarySchema);
 
-module.exports = Itinerary; 

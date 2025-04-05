@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
+import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
 const pointSchema = new mongoose.Schema({
   type: {
@@ -89,7 +89,7 @@ const activitySchema = new mongoose.Schema(
 
 // Index for efficient queries
 activitySchema.index({ day: 1 });
-activitySchema.index({ uuid: 1 });
+// activitySchema.index({ uuid: 1 }); // Removed to avoid duplicate index with the unique property
 activitySchema.index({ 'location.coordinates': '2dsphere' });
 
 // Method to get the public ID (UUID)
@@ -107,6 +107,5 @@ activitySchema.pre('save', function(next) {
   next();
 });
 
-const Activity = mongoose.model('Activity', activitySchema);
-
-module.exports = Activity; 
+export const Activity = mongoose.model('Activity', activitySchema);
+ 

@@ -1,5 +1,6 @@
-const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
+import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
+
 
 const pointSchema = new mongoose.Schema({
   type: {
@@ -87,7 +88,6 @@ const placeSchema = new mongoose.Schema(
 // Index for efficient queries
 placeSchema.index({ 'location': '2dsphere' });
 placeSchema.index({ name: 'text', address: 'text' });
-placeSchema.index({ uuid: 1 });
 placeSchema.index({ types: 1 });
 
 // Method to get the public ID (UUID)
@@ -95,6 +95,4 @@ placeSchema.methods.getPublicId = function() {
   return this.uuid;
 };
 
-const Place = mongoose.model('Place', placeSchema);
-
-module.exports = Place; 
+export const Place = mongoose.model('Place', placeSchema); 

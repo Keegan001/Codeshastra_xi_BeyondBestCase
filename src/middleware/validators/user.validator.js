@@ -1,4 +1,4 @@
-const Joi = require('joi');
+import Joi from 'joi';
 
 // User registration schema
 const registerUserSchema = Joi.object({
@@ -56,7 +56,7 @@ const changePasswordSchema = Joi.object({
     .messages({ 'any.only': 'Passwords must match' })
 }).with('newPassword', 'confirmPassword');
 
-module.exports = {
+export default {
   registerUser: registerUserSchema,
   loginUser: loginUserSchema,
   forgotPassword: forgotPasswordSchema,

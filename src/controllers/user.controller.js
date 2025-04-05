@@ -1,5 +1,5 @@
-const userService = require('../services/user/user.service');
-const { ApiError } = require('../middleware/errorHandler');
+import userService from '../services/user/user.service.js';
+import { ApiError } from '../middleware/errorHandler.js';
 
 /**
  * UserController - Handles user-related requests
@@ -94,4 +94,4 @@ class UserController {
   }
 }
 
-module.exports = new UserController(); 
+export default new UserController(); 

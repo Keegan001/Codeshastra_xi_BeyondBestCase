@@ -1,7 +1,7 @@
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const User = require('../../models/user.model');
-const { ApiError } = require('../../middleware/errorHandler');
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import {User} from '../../models/user.model.js';
+import { ApiError } from '../../middleware/errorHandler.js';
 
 /**
  * AuthService - Handles authentication operations
@@ -136,4 +136,4 @@ class AuthService {
   }
 }
 
-module.exports = new AuthService(); 
+export default new AuthService(); 

@@ -1,5 +1,5 @@
-const User = require('../../models/user.model');
-const { ApiError } = require('../../middleware/errorHandler');
+import {User} from '../../models/user.model.js';
+import { ApiError } from '../../middleware/errorHandler.js';
 
 /**
  * UserService - Handles user-related operations
@@ -111,4 +111,4 @@ class UserService {
   }
 }
 
-module.exports = new UserService(); 
+export default new UserService(); 

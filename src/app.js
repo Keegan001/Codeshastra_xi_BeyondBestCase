@@ -1,12 +1,12 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-const morgan = require('morgan');
-const helmet = require('helmet');
-const compression = require('compression');
-const routes = require('./routes');
-const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
-const config = require('./config');
+import express from 'express';
+import mongoose from 'mongoose';
+import cors from 'cors';
+import morgan from 'morgan';
+import helmet from 'helmet';
+import compression from 'compression';
+import routes from './routes/index.js';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import config from './config/index.js';
 
 // Initialize Express app
 const app = express();
@@ -49,17 +49,19 @@ app.use(notFoundHandler);
 app.use(errorHandler);
 
 // Connect to MongoDB and start server
-mongoose
-  .connect(config.mongodbUri)
-  .then(() => {
+const connectAndStartServer = async () => {
+  try {
+    await mongoose.connect(config.mongodbUri);
     console.log('Connected to MongoDB');
     app.listen(config.port, () => {
-      console.log(`Server running on port ${config.port} in ${config.env} mode ${mongoose.connection.host}`);
+      console.log(`Server running on port ${config.port} in ${config.nodeEnv} mode ${mongoose.connection.host}`);
     });
-  })
-  .catch((err) => {
+  } catch (err) {
     console.error('MongoDB connection error:', err);
     process.exit(1);
-  });
+  }
+};
 
-module.exports = app; 
+connectAndStartServer();
+
+export default app; 

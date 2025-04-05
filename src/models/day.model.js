@@ -1,5 +1,5 @@
-const mongoose = require('mongoose');
-const { v4: uuidv4 } = require('uuid');
+import mongoose from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
 
 const daySchema = new mongoose.Schema(
   {
@@ -32,22 +32,21 @@ const daySchema = new mongoose.Schema(
 
 // Index for efficient queries
 daySchema.index({ itinerary: 1, date: 1 });
-daySchema.index({ uuid: 1 });
 
 // Method to get the public ID (UUID)
-daySchema.methods.getPublicId = function() {
+daySchema.methods.getPublicId = function () {
   return this.uuid;
 };
 
 // Virtual for day number in the itinerary
-daySchema.virtual('dayNumber').get(function() {
+daySchema.virtual('dayNumber').get(function () {
   if (this._dayNumber !== undefined) {
     return this._dayNumber;
   }
   return null;
 });
 
-daySchema.virtual('dayNumber').set(function(num) {
+daySchema.virtual('dayNumber').set(function (num) {
   this._dayNumber = num;
 });
 
@@ -55,6 +54,6 @@ daySchema.virtual('dayNumber').set(function(num) {
 daySchema.set('toJSON', { virtuals: true });
 daySchema.set('toObject', { virtuals: true });
 
-const Day = mongoose.model('Day', daySchema);
+export const Day = mongoose.model('Day', daySchema);
 
-module.exports = Day; 
+ 

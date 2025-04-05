@@ -1,13 +1,14 @@
-const User = require('./user.model');
-const Itinerary = require('./itinerary.model');
-const Day = require('./day.model');
-const Activity = require('./activity.model');
-const Place = require('./place.model');
 
-module.exports = {
+import {User} from './user.model.js';
+import {Itinerary} from './itinerary.model.js';
+import {Day} from './day.model.js';
+import {Activity} from './activity.model.js';
+import {Place} from './place.model.js';
+
+export {
   User,
   Itinerary,
   Day,
   Activity,
   Place
-}; 
+};

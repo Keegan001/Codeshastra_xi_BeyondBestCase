@@ -1,4 +1,4 @@
-const Joi = require('joi');
+import Joi from 'joi';
 
 // Define common schemas
 const dateRangeSchema = Joi.object({
@@ -116,7 +116,7 @@ const reorderActivitiesSchema = Joi.object({
   activityIds: Joi.array().items(Joi.string()).required()
 });
 
-module.exports = {
+export default {
   createItinerary: createItinerarySchema,
   updateItinerary: updateItinerarySchema,
   updateDay: updateDaySchema,
