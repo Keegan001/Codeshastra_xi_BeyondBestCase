@@ -164,7 +164,7 @@ function Login() {
                   <button
                     type="button"
                     onClick={handleRequestOTP}
-                    className="w-full bg-indigo-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    className="w-full bg-[#56288A] text-white py-2 px-4 rounded-lg font-medium hover:bg-[#864BD8] focus:outline-none focus:ring-2 focus:ring-[#56288A] focus:ring-offset-2"
                     disabled={isLoading || !credentials.email}
                   >
                     {isLoading ? 'Sending...' : 'Send OTP'}
@@ -187,14 +187,14 @@ function Login() {
                     name="otp"
                     value={otp}
                     onChange={handleOtpChange}
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#56288A]"
                     required
                     maxLength={6}
                     placeholder="Enter your 6-digit code"
                   />
                   <button 
                     type="button"
-                    className="text-sm text-indigo-600 hover:underline mt-2"
+                    className="text-sm text-[#56288A] hover:underline mt-2"
                     onClick={handleRequestOTP}
                     disabled={isLoading}
                   >

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Loader = ({ size = 'medium', color = 'indigo' }) => {
+const Loader = ({ size = 'medium', color = 'primary' }) => {
   // Set size class based on prop
   const sizeClass = {
     small: 'h-6 w-6',
@@ -10,12 +10,12 @@ const Loader = ({ size = 'medium', color = 'indigo' }) => {
 
   // Set color class based on prop
   const colorClass = {
-    indigo: 'text-indigo-600',
+    primary: 'text-[#56288A]',
     blue: 'text-blue-600',
     green: 'text-green-600',
     red: 'text-red-600',
     gray: 'text-gray-600'
-  }[color] || 'text-indigo-600';
+  }[color] || 'text-[#56288A]';
 
   return (
     <div className="flex justify-center items-center">

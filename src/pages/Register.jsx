@@ -156,7 +156,7 @@ function Register() {
             Already have an account?{' '}
             <Link 
               to="/login" 
-              className="text-indigo-600 hover:underline"
+              className="text-[#56288A] hover:underline"
             >
               Log In
             </Link>

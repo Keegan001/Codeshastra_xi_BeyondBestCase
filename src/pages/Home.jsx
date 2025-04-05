@@ -34,7 +34,7 @@ function Home() {
       variants={fadeIn}
     >
       
-    <section className="bg-gradient-to-br from-indigo-50 via-purple-50 to-blue-50 py-20 mb-10 flex items-center justify-center px-6 md:px-10">
+    <section className="bg-gradient-to-br from-[#F6F0FF] via-[#F0E6FF] to-[#E6F0FF] py-20 mb-10 flex items-center justify-center px-6 md:px-10">
       <div className="max-w-7xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-16">
         {/* Left Column */}
         <motion.div 
@@ -47,9 +47,9 @@ function Home() {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-6xl md:text-7xl font-extrabold leading-tight text-gray-900 mb-6">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">Safar:</span><br />
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#56288A] to-[#864BD8]">Safar:</span><br />
               Your Journey,<br />
-              <span className="text-indigo-600">Your Way</span>
+              <span className="text-[#56288A]">Your Way</span>
             </h1>
           </motion.div>
           <motion.p 
@@ -104,7 +104,7 @@ function Home() {
 
       {/* Features Section */}
       <motion.section 
-        className="py-20 bg-gradient-to-br from-white via-indigo-50 to-white"
+        className="py-20 bg-gradient-to-br from-white via-[#F6F0FF] to-white"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
@@ -112,7 +112,7 @@ function Home() {
       >
         <div className="text-center mb-16">
           <motion.h2 
-            className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600"
+            className="text-4xl font-bold mb-4 bg-clip-text text-transparent bg-gradient-to-r from-[#56288A] to-[#864BD8]"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}

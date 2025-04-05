@@ -16,7 +16,7 @@ const Input = forwardRef(({
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-gray-100 disabled:text-gray-400 ${className}`}
+      className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#56288A] disabled:bg-gray-100 disabled:text-gray-400 ${className}`}
       disabled={disabled}
       {...props}
     />

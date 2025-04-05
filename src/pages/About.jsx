@@ -39,21 +39,21 @@ function About() {
         <h2 className="text-2xl font-bold mb-6">Our Values</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-xl font-semibold mb-3 text-indigo-600">Simplicity</h3>
+            <h3 className="text-xl font-semibold mb-3 text-[#56288A]">Simplicity</h3>
             <p className="text-gray-700">
               We believe in keeping things simple. Our platform is designed to be intuitive
               and easy to use, even for first-time travelers.
             </p>
           </div>
           <div>
-            <h3 className="text-xl font-semibold mb-3 text-indigo-600">Collaboration</h3>
+            <h3 className="text-xl font-semibold mb-3 text-[#56288A]">Collaboration</h3>
             <p className="text-gray-700">
               Travel is better when shared. We've built our tools to make group planning
               seamless and enjoyable for everyone involved.
             </p>
           </div>
           <div>
-            <h3 className="text-xl font-semibold mb-3 text-indigo-600">Adventure</h3>
+            <h3 className="text-xl font-semibold mb-3 text-[#56288A]">Adventure</h3>
             <p className="text-gray-700">
               We encourage exploration and new experiences. Our platform helps you discover
               hidden gems and create unique itineraries.
