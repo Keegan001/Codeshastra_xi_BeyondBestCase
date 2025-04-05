@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Lightbulb, LogIn, PlaneTakeoff } from "lucide-react";
-import arrow from "../../public/arrow.png"; // Adjust path as needed
+import arrow from "../assets/arrow.png"; // Adjust path as needed
 
 const HowItWorks = () => {
   return (

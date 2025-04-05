@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import HowItWorks from './HowItWorks'
 
 import { Lightbulb, LogIn, PlaneTakeoff } from "lucide-react";
-import balloon from "../../public/balloon.svg"; // Adjust path as needed
+import balloon from "../assets/balloon.svg"; // Adjust path as needed
 
 import "./HeroSection.css"; // <-- We'll write the float animation here
 
