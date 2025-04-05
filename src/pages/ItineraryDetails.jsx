@@ -8,6 +8,8 @@ import ItineraryMap from '../components/ItineraryMap'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import BudgetManager from '../components/BudgetManager'
+import api from '../services/api'
+axios.defaults.timeout = 100000;
 
 function ItineraryDetails() {
   // Move all hooks to the top
@@ -257,9 +259,14 @@ function ItineraryDetails() {
     const loadingMessage = "Generating itinerary days with AI...";
     setLocalError(loadingMessage);
     
+    // Define the AI service URL
+    const AI_SERVICE_URL = 'http://localhost:8000/api/ai';
+    
     console.log("Making API call to generate itinerary using axios");
-    // Make API call to generate itinerary using axios
-    axios.post('http://127.0.0.1:8000/api/ai/generate-itinerary', requestData)
+    // Make API call to generate itinerary using the api instance with auth headers and increased timeout
+    api.post(`${AI_SERVICE_URL}/generate-itinerary`, requestData, {
+      timeout: 60000 // Increase timeout to 60 seconds
+    })
       .then(response => {
         console.log("API response received:", response.status);
         return response.data;
@@ -276,16 +283,11 @@ function ItineraryDetails() {
         if (data && data.itinerary && data.itinerary.day_wise_plan) {
           // Send the AI response to our backend for processing
           console.log("Sending AI response to backend for processing...");
-          // Get token from localStorage instead of Redux state
-          const authToken = localStorage.getItem('token');
-          if (!authToken) {
-            throw new Error('Authentication token not found. Please log in again.');
-          }
-          
-          return axios.post(
-            `http://localhost:5000/api/itineraries/${id}/process-ai-itinerary`,
+          // Use api instance instead of axios directly to ensure auth headers are sent
+          return api.post(
+            `/itineraries/${id}/process-ai-itinerary`,
             { itineraryData: data },
-            { headers: { Authorization: `Bearer ${authToken}` } }
+            { timeout: 60000 } // Increase timeout to 60 seconds
           );
         } else {
           throw new Error('Invalid AI response format');

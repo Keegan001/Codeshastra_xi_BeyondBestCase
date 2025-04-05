@@ -31,6 +31,7 @@ function DayPlanner() {
   })
   const [isAddingActivity, setIsAddingActivity] = useState(false)
   const [selectedPlace, setSelectedPlace] = useState(null)
+  const [activeTab, setActiveTab] = useState('activities')
   
   if (!isAuthenticated) {
     return <Navigate to="/login" />
@@ -48,6 +49,7 @@ function DayPlanner() {
     // First, get the itinerary for context
     getItineraryById(id)
       .then(itineraryData => {
+        console.log('Itinerary data loaded:', itineraryData)
         setItinerary(itineraryData)
         
         // Now, directly fetch the day data from the backend
@@ -363,6 +365,30 @@ function DayPlanner() {
             </div>
           </div>
           
+          {/* Tab Navigation */}
+          <div className="flex border-b mb-6">
+            <button
+              className={`px-4 py-2 ${
+                activeTab === 'activities' 
+                  ? 'border-b-2 border-indigo-500 text-indigo-600 font-medium' 
+                  : 'text-gray-600 hover:text-indigo-600'
+              }`}
+              onClick={() => setActiveTab('activities')}
+            >
+              Activities
+            </button>
+            <button
+              className={`px-4 py-2 ${
+                activeTab === 'suggestions' 
+                  ? 'border-b-2 border-indigo-500 text-indigo-600 font-medium' 
+                  : 'text-gray-600 hover:text-indigo-600'
+              }`}
+              onClick={() => setActiveTab('suggestions')}
+            >
+              Additional Suggestions
+            </button>
+          </div>
+          
           {isAddingActivity && (
             <div className="bg-gray-50 p-6 rounded-lg mb-6">
               <h3 className="text-lg font-medium mb-4">Add New Activity</h3>
@@ -582,93 +608,200 @@ function DayPlanner() {
             </div>
           )}
           
-          {!sortedActivities || sortedActivities.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg">
-              <h3 className="text-lg font-medium text-gray-700 mb-2">No Activities Planned</h3>
-              <p className="text-gray-600 mb-4">
-                Start adding activities to plan your day.
-              </p>
-              <button
-                onClick={() => setIsAddingActivity(true)}
-                className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
-                disabled={isAddingActivity}
-              >
-                Add Your First Activity
-              </button>
-            </div>
-          ) : (
-            <div className="bg-white rounded-lg border">
-              <ul className="divide-y divide-gray-200">
-                {sortedActivities.map((activity, index) => {
-                  const activityId = activity.id || activity._id || `activity-${index}`;
-                  const activityType = activity.type || 'other';
-                  
-                  // Icon based on activity type
-                  let icon = '📝'; // Default
-                  if (activityType === 'attraction') icon = '🏛️';
-                  if (activityType === 'food') icon = '🍽️';
-                  if (activityType === 'transport') icon = '🚌';
-                  if (activityType === 'accommodation') icon = '🏨';
-                  
-                  return (
-                    <li 
-                      key={activityId} 
-                      className={`p-4 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                    >
-                      <div className="flex justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center">
-                            <span className="mr-2">{icon}</span>
-                            <h3 className="text-lg font-medium">{activity.title}</h3>
-                            {parseFloat(activity.cost) > 0 && (
-                              <span className="ml-3 bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
-                                ${parseFloat(activity.cost).toFixed(2)}
-                              </span>
-                            )}
-                            {activity.costObject?.amount > 0 && (
-                              <span className="ml-3 bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
-                                {activity.costObject.currency} {parseFloat(activity.costObject.amount).toFixed(2)}
-                              </span>
-                            )}
+          {activeTab === 'activities' ? (
+            <>
+              {!sortedActivities || sortedActivities.length === 0 ? (
+                <div className="text-center py-8 bg-gray-50 rounded-lg">
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No Activities Planned</h3>
+                  <p className="text-gray-600 mb-4">
+                    Start adding activities to plan your day.
+                  </p>
+                  <button
+                    onClick={() => setIsAddingActivity(true)}
+                    className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+                    disabled={isAddingActivity}
+                  >
+                    Add Your First Activity
+                  </button>
+                </div>
+              ) : (
+                <div className="bg-white rounded-lg border">
+                  <ul className="divide-y divide-gray-200">
+                    {sortedActivities.map((activity, index) => {
+                      const activityId = activity.id || activity._id || `activity-${index}`;
+                      const activityType = activity.type || 'other';
+                      
+                      // Icon based on activity type
+                      let icon = '📝'; // Default
+                      if (activityType === 'attraction') icon = '🏛️';
+                      if (activityType === 'food') icon = '🍽️';
+                      if (activityType === 'transport') icon = '🚌';
+                      if (activityType === 'accommodation') icon = '🏨';
+                      
+                      return (
+                        <li 
+                          key={activityId} 
+                          className={`p-4 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                        >
+                          <div className="flex justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center">
+                                <span className="mr-2">{icon}</span>
+                                <h3 className="text-lg font-medium">{activity.title}</h3>
+                                {parseFloat(activity.cost) > 0 && (
+                                  <span className="ml-3 bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
+                                    ${parseFloat(activity.cost).toFixed(2)}
+                                  </span>
+                                )}
+                                {activity.costObject?.amount > 0 && (
+                                  <span className="ml-3 bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
+                                    {activity.costObject.currency} {parseFloat(activity.costObject.amount).toFixed(2)}
+                                  </span>
+                                )}
+                              </div>
+                              
+                              {(activity.startTime || activity.endTime) && (
+                                <p className="text-gray-600 mt-1">
+                                  {activity.startTime && formatTime(activity.startTime)}
+                                  {activity.startTime && activity.endTime && ' - '}
+                                  {activity.endTime && formatTime(activity.endTime)}
+                                </p>
+                              )}
+                              
+                              {activity.placeName && (
+                                <p className="text-indigo-600 text-sm mt-1">
+                                  {activity.placeName}
+                                </p>
+                              )}
+                              
+                              {activity.notes && (
+                                <p className="text-gray-700 mt-2 text-sm">
+                                  {activity.notes}
+                                </p>
+                              )}
+                            </div>
+                            
+                            <div className="flex">
+                              <button
+                                onClick={() => removeActivity(activityId)}
+                                className="text-red-600 hover:text-red-800"
+                                title="Remove activity"
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                            </div>
                           </div>
-                          
-                          {(activity.startTime || activity.endTime) && (
-                            <p className="text-gray-600 mt-1">
-                              {activity.startTime && formatTime(activity.startTime)}
-                              {activity.startTime && activity.endTime && ' - '}
-                              {activity.endTime && formatTime(activity.endTime)}
-                            </p>
-                          )}
-                          
-                          {activity.placeName && (
-                            <p className="text-indigo-600 text-sm mt-1">
-                              {activity.placeName}
-                            </p>
-                          )}
-                          
-                          {activity.notes && (
-                            <p className="text-gray-700 mt-2 text-sm">
-                              {activity.notes}
-                            </p>
-                          )}
-                        </div>
-                        
-                        <div className="flex">
-                          <button
-                            onClick={() => removeActivity(activityId)}
-                            className="text-red-600 hover:text-red-800"
-                            title="Remove activity"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+            </>
+          ) : (
+            // Additional Suggestions Tab Content
+            <div className="bg-white rounded-lg border p-4">
+              {itinerary?.additionalSuggestions ? (
+                <div>
+                  {/* Accommodation Suggestions */}
+                  {itinerary.additionalSuggestions.accommodations && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-3">🏨 Accommodation Suggestions</h3>
+                      <ul className="space-y-3">
+                        {Object.entries(itinerary.additionalSuggestions.accommodations).map(([type, hotels]) => (
+                          <li key={type} className="bg-gray-50 p-3 rounded">
+                            <h4 className="font-medium mb-2 capitalize">{type}</h4>
+                            <ul className="space-y-2 pl-4">
+                              {hotels.map((hotel, index) => (
+                                <li key={index} className="text-sm">
+                                  <div className="font-medium">{hotel.name}</div>
+                                  {hotel.area && <div>Area: {hotel.area}</div>}
+                                  {hotel.price_range && <div>Price: {hotel.price_range}</div>}
+                                  {hotel.amenities && (
+                                    <div>Amenities: {hotel.amenities.join(', ')}</div>
+                                  )}
+                                </li>
+                              ))}
+                            </ul>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Restaurant Suggestions */}
+                  {itinerary.additionalSuggestions.restaurants && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-3">🍽️ Restaurant Suggestions</h3>
+                      <ul className="space-y-3">
+                        {Object.entries(itinerary.additionalSuggestions.restaurants).map(([cuisine, restaurants]) => (
+                          <li key={cuisine} className="bg-gray-50 p-3 rounded">
+                            <h4 className="font-medium mb-2 capitalize">{cuisine} Cuisine</h4>
+                            <ul className="space-y-2 pl-4">
+                              {restaurants.map((restaurant, index) => (
+                                <li key={index} className="text-sm">
+                                  <div className="font-medium">{restaurant.name}</div>
+                                  {restaurant.price_range && <div>Price: {restaurant.price_range}</div>}
+                                  {restaurant.speciality && <div>Speciality: {restaurant.speciality}</div>}
+                                  {restaurant.address && <div>Address: {restaurant.address}</div>}
+                                </li>
+                              ))}
+                            </ul>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Activity Suggestions */}
+                  {itinerary.additionalSuggestions.activities && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-3">🎯 Activity Suggestions</h3>
+                      <ul className="space-y-2">
+                        {itinerary.additionalSuggestions.activities.map((activity, index) => (
+                          <li key={index} className="bg-gray-50 p-3 rounded">
+                            <div className="font-medium">{activity.name || activity.title || activity}</div>
+                            {typeof activity === 'object' && activity.description && (
+                              <div className="text-sm text-gray-700 mt-1">{activity.description}</div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Transportation Suggestions */}
+                  {itinerary.additionalSuggestions.transportation && (
+                    <div className="mb-6">
+                      <h3 className="text-lg font-semibold mb-3">🚌 Transportation Options</h3>
+                      <ul className="space-y-2">
+                        {itinerary.additionalSuggestions.transportation.map((option, index) => (
+                          <li key={index} className="bg-gray-50 p-3 rounded">
+                            <div className="font-medium">
+                              {option.mode || option.name || option.type || `Option ${index + 1}`}
+                            </div>
+                            {option.description && (
+                              <div className="text-sm text-gray-700 mt-1">{option.description}</div>
+                            )}
+                            {option.cost && (
+                              <div className="text-sm mt-1">Cost: {option.cost}</div>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <h3 className="text-lg font-medium text-gray-700 mb-2">No Additional Suggestions</h3>
+                  <p className="text-gray-600">
+                    There are no additional suggestions available for this itinerary.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
