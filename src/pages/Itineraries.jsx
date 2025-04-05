@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
-import { getItineraries, deleteItinerary } from '../services/itinerary'
+import { useSelector, useDispatch } from 'react-redux'
+import { fetchItineraries, removeItinerary } from '../store/slices/itinerarySlice'
 
 function Itineraries() {
   const { isAuthenticated } = useSelector(state => state.auth)
-  const [itineraries, setItineraries] = useState([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { itineraries, isLoading, error } = useSelector(state => state.itinerary)
+  const dispatch = useDispatch()
   
   // Redirect if not authenticated
   if (!isAuthenticated) {
@@ -15,38 +14,17 @@ function Itineraries() {
   }
   
   useEffect(() => {
-    loadItineraries()
-  }, [])
-  
-  function loadItineraries() {
-    setIsLoading(true)
-    getItineraries()
-      .then(data => {
-        setItineraries(data)
-        setIsLoading(false)
-      })
-      .catch(err => {
-        setError('Failed to load itineraries')
-        setIsLoading(false)
-        console.error(err)
-      })
-  }
+    dispatch(fetchItineraries())
+  }, [dispatch])
   
   function handleDelete(id) {
     if (window.confirm('Are you sure you want to delete this itinerary?')) {
-      setIsLoading(true)
-      deleteItinerary(id)
-        .then(() => {
-          setItineraries(prev => prev.filter(item => item.id !== id))
-          setIsLoading(false)
-        })
-        .catch(err => {
-          setError('Failed to delete itinerary')
-          setIsLoading(false)
-          console.error(err)
-        })
+      dispatch(removeItinerary(id))
     }
   }
+  
+  // Create a memoized version of the itineraries data to ensure it's always an array
+  const itinerariesData = Array.isArray(itineraries) ? itineraries : []
   
   return (
     <div className="py-8">
@@ -70,7 +48,7 @@ function Itineraries() {
         <div className="text-center py-12">
           <p className="text-gray-600">Loading itineraries...</p>
         </div>
-      ) : itineraries.length === 0 ? (
+      ) : itinerariesData.length === 0 ? (
         <div className="bg-gray-50 rounded-lg p-8 text-center">
           <h3 className="text-xl font-medium text-gray-700 mb-4">No Itineraries Yet</h3>
           <p className="text-gray-600 mb-6">
@@ -85,7 +63,7 @@ function Itineraries() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {itineraries.map(itinerary => (
+          {itinerariesData.map(itinerary => (
             <div 
               key={itinerary.id} 
               className="bg-white rounded-lg shadow-md overflow-hidden"

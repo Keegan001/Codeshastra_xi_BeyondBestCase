@@ -10,6 +10,9 @@ import Profile from './pages/Profile'
 import About from './pages/About'
 import Itineraries from './pages/Itineraries'
 import CreateItinerary from './pages/CreateItinerary'
+import ItineraryDetails from './pages/ItineraryDetails'
+import DayPlanner from './pages/DayPlanner'
+import PlaceSearch from './pages/PlaceSearch'
 
 function App() {
   return (
@@ -24,6 +27,9 @@ function App() {
             <Route path="about" element={<About />} />
             <Route path="itineraries" element={<Itineraries />} />
             <Route path="itineraries/new" element={<CreateItinerary />} />
+            <Route path="itineraries/:id" element={<ItineraryDetails />} />
+            <Route path="itineraries/:id/days/:dayId" element={<DayPlanner />} />
+            <Route path="places/search" element={<PlaceSearch />} />
             {/* Additional routes will be added in future phases */}
           </Route>
         </Routes>

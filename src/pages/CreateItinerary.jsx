@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
-import { useSelector } from 'react-redux'
-import { createItinerary } from '../services/itinerary'
+import { useSelector, useDispatch } from 'react-redux'
+import { createItinerary, clearError } from '../store/slices/itinerarySlice'
 
 function CreateItinerary() {
   const { isAuthenticated } = useSelector(state => state.auth)
+  const { isLoading, error: reduxError } = useSelector(state => state.itinerary)
+  const dispatch = useDispatch()
   const navigate = useNavigate()
   
   const [formData, setFormData] = useState({
@@ -16,8 +18,10 @@ function CreateItinerary() {
     isPrivate: false
   })
   
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState(null)
+  const [localError, setLocalError] = useState(null)
+  
+  // Combine local and Redux errors
+  const error = localError || reduxError
   
   // Redirect if not authenticated
   if (!isAuthenticated) {
@@ -31,7 +35,8 @@ function CreateItinerary() {
       [name]: type === 'checkbox' ? checked : value
     }))
     
-    if (error) setError(null)
+    if (localError) setLocalError(null)
+    if (reduxError) dispatch(clearError())
   }
   
   function handleSubmit(e) {
@@ -42,26 +47,56 @@ function CreateItinerary() {
     const end = new Date(formData.endDate)
     
     if (end < start) {
-      setError('End date cannot be before start date')
+      // Set a local validation error
+      dispatch(clearError())
+      setLocalError('End date cannot be before start date')
       return
     }
     
-    setIsLoading(true)
+    setLocalError(null)
     
-    createItinerary(formData)
-      .then(newItinerary => {
-        navigate(`/itineraries/${newItinerary.id}`)
+    dispatch(createItinerary(formData))
+      .unwrap()
+      .then(itinerary => {
+        console.log('Received itinerary from Redux:', itinerary);
+        
+        // After our service layer transformations, we should have the actual itinerary object
+        // Navigate using the itinerary's ID (_id for MongoDB)
+        if (itinerary && (itinerary._id || itinerary.id)) {
+          const itineraryId = itinerary._id || itinerary.id;
+          navigate(`/itineraries/${itineraryId}`);
+        } else {
+          // If we can't find an ID, just go back to the itineraries list
+          console.warn('Created itinerary but no ID found:', itinerary);
+          navigate('/itineraries');
+        }
       })
       .catch(err => {
-        setError('Failed to create itinerary')
-        setIsLoading(false)
-        console.error(err)
+        console.error('Error creating itinerary:', err)
+        // Handle API errors
+        if (typeof err === 'string') {
+          setLocalError(err)
+        } else if (err && err.message) {
+          setLocalError(err.message);
+        } else {
+          setLocalError('Failed to create itinerary. Please try again.');
+        }
       })
   }
+  
+  // Note: If in dev mode with mock data, show a warning
+  const isDevelopmentWithMock = import.meta.env.DEV && window.itineraryServiceOffline
   
   return (
     <div className="max-w-2xl mx-auto py-8">
       <h1 className="text-3xl font-bold mb-8">Create New Itinerary</h1>
+      
+      {isDevelopmentWithMock && (
+        <div className="bg-blue-100 text-blue-700 p-4 rounded-lg mb-6">
+          <p className="font-medium">Development Mode: Using Mock Data</p>
+          <p className="text-sm mt-1">Backend API is unavailable. Your changes will be stored temporarily in browser memory.</p>
+        </div>
+      )}
       
       {error && (
         <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
@@ -193,7 +228,7 @@ function CreateItinerary() {
           <div className="flex space-x-4">
             <button
               type="submit"
-              className="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700"
+              className="bg-indigo-600 text-white px-6 py-2 rounded hover:bg-indigo-700 disabled:bg-indigo-300"
               disabled={isLoading}
             >
               {isLoading ? 'Creating...' : 'Create Itinerary'}
@@ -201,7 +236,7 @@ function CreateItinerary() {
             <button
               type="button"
               onClick={() => navigate('/itineraries')}
-              className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300"
+              className="bg-gray-200 text-gray-800 px-6 py-2 rounded hover:bg-gray-300 disabled:bg-gray-100"
               disabled={isLoading}
             >
               Cancel
