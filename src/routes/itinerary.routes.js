@@ -156,4 +156,18 @@ router.patch(
   itineraryController.togglePublicJoinSetting
 );
 
+// Update an itinerary with AI
+router.post(
+  '/:id/edit-with-ai',
+  authenticate,
+  itineraryController.editItineraryWithAI
+);
+
+// Renumber days in chronological order
+router.post(
+  '/:id/renumber-days',
+  authenticate,
+  itineraryController.renumberDays
+);
+
 export default router; 

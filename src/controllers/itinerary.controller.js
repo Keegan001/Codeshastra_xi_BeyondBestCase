@@ -3,6 +3,8 @@ import dayService from '../services/itinerary/day.service.js';
 import { ApiResponse } from '../middleware/apiResponse.js';
 import { ApiError } from '../middleware/errorHandler.js';
 import { Itinerary } from '../models/index.js';
+import axios from 'axios';
+import { cleanAndParseItineraryResponse } from '../utils/ai-helpers.js';
 
 /**
  * ItineraryController - Handles itinerary-related API endpoints
@@ -520,6 +522,82 @@ class ItineraryController {
       const result = await itineraryService.processAiGeneratedItinerary(itineraryId, aiItineraryData, userId);
       
       ApiResponse.success(res, 200, 'AI itinerary processed successfully', result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Edit itinerary with AI
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  async editItineraryWithAI(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const itineraryId = req.params.id;
+      const { message } = req.body;
+      
+      if (!message) {
+        throw ApiError.badRequest('Message is required');
+      }
+      
+      // Get the current itinerary
+      const itinerary = await itineraryService.getItineraryById(itineraryId, userId);
+      
+      if (!itinerary) {
+        throw ApiError.notFound('Itinerary not found');
+      }
+      
+      // Generate a session ID for the AI conversation
+      const session_id = `itinerary_${itineraryId}_${Date.now()}`;
+      
+      // Call the AI service
+      const aiResponse = await axios.post('http://localhost:8000/api/ai/edit-itinerary', {
+        session_id,
+        current_itinerary: itinerary,
+        message
+      });
+      
+      // Parse and clean the AI response
+      try {
+        const parsedResponse = cleanAndParseItineraryResponse(aiResponse.data);
+        
+        // Update the itinerary with the AI response
+        const updatedItinerary = await itineraryService.updateItinerary(
+          itineraryId, 
+          parsedResponse.itinerary, 
+          userId
+        );
+        
+        ApiResponse.success(res, 200, 'Itinerary updated successfully with AI', { 
+          itinerary: updatedItinerary,
+          ai_message: parsedResponse.message 
+        });
+      } catch (parseError) {
+        console.error('Error parsing AI response:', parseError);
+        throw ApiError.badRequest('Failed to parse AI response');
+      }
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Renumber days in chronological order
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  async renumberDays(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const itineraryId = req.params.id;
+      
+      const days = await dayService.renumberDaysChronologically(itineraryId, userId);
+      
+      ApiResponse.success(res, 200, 'Days renumbered successfully', { days });
     } catch (error) {
       next(error);
     }

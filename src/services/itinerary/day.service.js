@@ -1,6 +1,6 @@
 import { Day, Activity, Itinerary } from '../../models/index.js';
-import { ApiError } from '../../middleware/errorHandler.js';
 import mongoose from 'mongoose';
+import { ApiError } from '../../middleware/errorHandler.js';
 
 /**
  * DayService - Handles operations for days in an itinerary
@@ -413,6 +413,51 @@ class DayService {
     });
 
     return updatedDay;
+  }
+
+  /**
+   * Renumber days in chronological order
+   * @param {String} itineraryId - Itinerary ID
+   * @param {String} userId - User ID
+   * @returns {Array} Updated days
+   */
+  async renumberDaysChronologically(itineraryId, userId) {
+    // Get the itinerary and verify access
+    const itinerary = await Itinerary.findById(itineraryId);
+    
+    if (!itinerary) {
+      throw ApiError.notFound('Itinerary not found');
+    }
+    
+    // Check if user is owner or editor collaborator
+    const isOwner = itinerary.owner.toString() === userId;
+    const isEditorCollaborator = itinerary.collaborators.some(
+      c => c.user.toString() === userId && c.role === 'editor'
+    );
+    
+    if (!isOwner && !isEditorCollaborator) {
+      throw ApiError.forbidden('Access denied');
+    }
+    
+    // Get all days for this itinerary
+    const days = await Day.find({ itinerary: itineraryId })
+      .sort({ date: 1 }) // Sort by date ascending
+      .populate('activities');
+    
+    // Update day numbers sequentially
+    const updatedDays = [];
+    for (let i = 0; i < days.length; i++) {
+      const day = days[i];
+      day.dayNumber = i + 1; // Set day number (1-based index)
+      await day.save();
+      updatedDays.push(day);
+    }
+    
+    // Update the itinerary's days array to reflect the new order
+    itinerary.days = updatedDays.map(day => day._id);
+    await itinerary.save();
+    
+    return updatedDays;
   }
 }
 
