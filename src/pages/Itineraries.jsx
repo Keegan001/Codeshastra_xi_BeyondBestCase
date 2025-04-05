@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
-import { Link, Navigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchItineraries, removeItinerary } from '../store/slices/itinerarySlice'
 
 function Itineraries() {
-  const { isAuthenticated } = useSelector(state => state.auth)
+  const { isAuthenticated, user } = useSelector(state => state.auth)
   const { itineraries, isLoading, error } = useSelector(state => state.itinerary)
   const dispatch = useDispatch()
+  const navigate = useNavigate()
   
   // Redirect if not authenticated
   if (!isAuthenticated) {
@@ -14,6 +15,7 @@ function Itineraries() {
   }
   
   useEffect(() => {
+    // Fetch itineraries when component mounts
     dispatch(fetchItineraries())
   }, [dispatch])
   
@@ -24,15 +26,19 @@ function Itineraries() {
   }
   
   // Create a memoized version of the itineraries data to ensure it's always an array
-  const itinerariesData = Array.isArray(itineraries) ? itineraries : []
+  const itinerariesData = Array.isArray(itineraries?.itineraries) 
+    ? itineraries.itineraries 
+    : Array.isArray(itineraries) 
+      ? itineraries 
+      : []
   
   return (
-    <div className="py-8">
+    <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">My Itineraries</h1>
+        <h1 className="text-3xl font-bold text-gray-900">My Itineraries</h1>
         <Link 
           to="/itineraries/new" 
-          className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+          className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
         >
           Create New Itinerary
         </Link>
@@ -41,12 +47,18 @@ function Itineraries() {
       {error && (
         <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
           {error}
+          <button 
+            className="ml-2 text-red-500 hover:text-red-700"
+            onClick={() => dispatch(fetchItineraries())}
+          >
+            Try again
+          </button>
         </div>
       )}
       
       {isLoading ? (
         <div className="text-center py-12">
-          <p className="text-gray-600">Loading itineraries...</p>
+          <p className="text-gray-600">Loading your itineraries...</p>
         </div>
       ) : itinerariesData.length === 0 ? (
         <div className="bg-gray-50 rounded-lg p-8 text-center">
@@ -56,7 +68,7 @@ function Itineraries() {
           </p>
           <Link 
             to="/itineraries/new" 
-            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700"
+            className="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
           >
             Create Your First Itinerary
           </Link>
@@ -65,8 +77,8 @@ function Itineraries() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {itinerariesData.map(itinerary => (
             <div 
-              key={itinerary.id} 
-              className="bg-white rounded-lg shadow-md overflow-hidden"
+              key={itinerary.id || itinerary._id} 
+              className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
             >
               {itinerary.coverImage ? (
                 <img 
@@ -75,22 +87,22 @@ function Itineraries() {
                   className="w-full h-48 object-cover"
                 />
               ) : (
-                <div className="bg-gray-200 w-full h-48 flex items-center justify-center">
-                  <span className="text-gray-500">No Image</span>
+                <div className="bg-gradient-to-r from-indigo-500 to-purple-600 w-full h-48 flex items-center justify-center">
+                  <span className="text-white text-lg font-medium">{itinerary.title || 'My Itinerary'}</span>
                 </div>
               )}
               
               <div className="p-6">
-                <h3 className="text-xl font-bold mb-2">
+                <h3 className="text-xl font-bold mb-2 text-gray-900">
                   {itinerary.title}
                 </h3>
                 <p className="text-gray-600 mb-4">
-                  {itinerary.destination}
+                  {itinerary.destination?.name || itinerary.destination || 'No destination specified'}
                 </p>
                 
                 <div className="flex justify-between items-center">
                   <p className="text-sm text-gray-500">
-                    {new Date(itinerary.startDate).toLocaleDateString()} - {new Date(itinerary.endDate).toLocaleDateString()}
+                    {new Date(itinerary.dateRange?.start || itinerary.startDate).toLocaleDateString()} - {new Date(itinerary.dateRange?.end || itinerary.endDate).toLocaleDateString()}
                   </p>
                   <span className="text-sm text-indigo-600 font-medium">
                     {itinerary.days?.length || 0} {itinerary.days?.length === 1 ? 'Day' : 'Days'}
@@ -99,13 +111,13 @@ function Itineraries() {
                 
                 <div className="flex justify-between mt-6">
                   <Link 
-                    to={`/itineraries/${itinerary.id}`} 
-                    className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded hover:bg-indigo-200"
+                    to={`/itineraries/${itinerary.id || itinerary._id || itinerary.uuid}`} 
+                    className="bg-indigo-100 text-indigo-700 px-4 py-2 rounded hover:bg-indigo-200 transition-colors"
                   >
                     View Details
                   </Link>
                   <button 
-                    onClick={() => handleDelete(itinerary.id)}
+                    onClick={() => handleDelete(itinerary.id || itinerary._id || itinerary.uuid)}
                     className="text-red-600 hover:text-red-800"
                   >
                     Delete

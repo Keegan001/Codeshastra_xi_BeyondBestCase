@@ -67,14 +67,29 @@ function getItineraries() {
 
   return api.get('/itineraries')
     .then(response => {
+      console.log('Itineraries response:', response);
       const data = response.data;
+      
       // Handle different possible API response formats
-      if (Array.isArray(data)) {
+      if (data && data.status === 'success' && data.data) {
+        // API format: { status: 'success', message: '...', data: {...}, timestamp: '...' }
+        console.log('Standard API response format detected');
+        return data.data.itineraries || data.data;
+      } else if (data && typeof data === 'object' && data.itineraries) {
+        // API format: { itineraries: [...] }
+        console.log('Direct itineraries object detected');
+        return data.itineraries;
+      } else if (Array.isArray(data)) {
+        // API format: direct array of itineraries
+        console.log('Direct array of itineraries detected');
         return data;
       } else if (data && typeof data === 'object') {
-        // Handle case where data is wrapped in an object (e.g., { itineraries: [...] })
-        return data.itineraries || data.items || data.data || [];
+        // Handle other object format
+        console.log('Other object format detected, looking for data');
+        return data.items || data.data || data.results || [];
       }
+      
+      console.log('No recognizable format, returning empty array');
       return [];
     })
     .catch(err => {
@@ -85,7 +100,7 @@ function getItineraries() {
         console.info('Switching to mock data after network error');
         return MOCK_ITINERARIES;
       }
-      return [];
+      throw err;
     });
 }
 
@@ -273,11 +288,71 @@ function addDayToItinerary(itineraryId, dayData) {
     .then(response => response.data);
 }
 
+function addCollaboratorToItinerary(itineraryId, email, role) {
+  // If in development and backend is unavailable, use mock data
+  if (useMockData) {
+    const mockItinerary = MOCK_ITINERARIES.find(item => item.id === itineraryId);
+    if (mockItinerary) {
+      if (!mockItinerary.collaborators) {
+        mockItinerary.collaborators = [];
+      }
+      mockItinerary.collaborators.push({
+        user: {
+          id: `mock-user-${Date.now()}`,
+          email,
+          name: email.split('@')[0]
+        },
+        role
+      });
+      return Promise.resolve(mockItinerary);
+    }
+    return Promise.reject(new Error('Itinerary not found'));
+  }
+
+  return api.post(`/itineraries/${itineraryId}/collaborators`, { email, role })
+    .then(response => {
+      console.log('Add collaborator response:', response);
+      const data = response.data;
+      return data.itinerary || data;
+    })
+    .catch(err => {
+      console.error(`Error adding collaborator to itinerary ${itineraryId}:`, err);
+      throw err;
+    });
+}
+
+function removeCollaboratorFromItinerary(itineraryId, collaboratorId) {
+  // If in development and backend is unavailable, use mock data
+  if (useMockData) {
+    const mockItinerary = MOCK_ITINERARIES.find(item => item.id === itineraryId);
+    if (mockItinerary && mockItinerary.collaborators) {
+      mockItinerary.collaborators = mockItinerary.collaborators.filter(
+        c => c.user.id !== collaboratorId
+      );
+      return Promise.resolve(mockItinerary);
+    }
+    return Promise.reject(new Error('Itinerary or collaborator not found'));
+  }
+
+  return api.delete(`/itineraries/${itineraryId}/collaborators/${collaboratorId}`)
+    .then(response => {
+      console.log('Remove collaborator response:', response);
+      const data = response.data;
+      return data.itinerary || data;
+    })
+    .catch(err => {
+      console.error(`Error removing collaborator from itinerary ${itineraryId}:`, err);
+      throw err;
+    });
+}
+
 export {
   getItineraries,
   getItineraryById,
   createItinerary,
   updateItinerary,
   deleteItinerary,
-  addDayToItinerary
+  addDayToItinerary,
+  addCollaboratorToItinerary,
+  removeCollaboratorFromItinerary
 } 

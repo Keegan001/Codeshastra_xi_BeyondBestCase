@@ -3,12 +3,13 @@ import { useParams, Link, Navigate, useNavigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { fetchItineraryById, updateItinerary, removeItinerary, addDayToItinerary, clearError } from '../store/slices/itinerarySlice'
 import { differenceInDays, addDays, format, parseISO } from 'date-fns'
+import GroupItineraryMembers from '../components/GroupItineraryMembers'
 
 function ItineraryDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const { isAuthenticated } = useSelector(state => state.auth)
+  const { isAuthenticated, user } = useSelector(state => state.auth)
   const { currentItinerary: itinerary, isLoading, error } = useSelector(state => state.itinerary)
   
   const [localError, setLocalError] = useState(null)
@@ -21,6 +22,17 @@ function ItineraryDetails() {
     endDate: '',
     isPrivate: false
   })
+
+  // Helper function to check if the current user is the owner
+  const isUserOwner = () => {
+    if (!itinerary || !itinerary.owner || !user) return false;
+    
+    // Convert IDs to strings for comparison
+    const ownerId = itinerary.owner._id?.toString() || itinerary.owner.id?.toString() || itinerary.owner.toString();
+    const userId = user._id?.toString() || user.id?.toString();
+    
+    return ownerId === userId;
+  };
 
   // Redirect if not authenticated
   if (!isAuthenticated) {
@@ -111,6 +123,7 @@ function ItineraryDetails() {
         console.error(err)
         setLocalError('Failed to update itinerary')
       })
+      window.location.reload()
   }
 
   function handleDelete() {
@@ -423,6 +436,14 @@ function ItineraryDetails() {
           )}
         </div>
       </div>
+      
+      {/* Add Group Members section below the itinerary details and above the daily plan */}
+      {itinerary && (
+        <GroupItineraryMembers 
+          itinerary={itinerary} 
+          isOwner={isUserOwner()}
+        />
+      )}
       
       <div className="mb-4 flex justify-between items-center">
         <h2 className="text-2xl font-bold">Daily Plan</h2>
