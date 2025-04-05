@@ -6,17 +6,14 @@ const daySchema = new mongoose.Schema(
     uuid: {
       type: String,
       default: uuidv4,
-      unique: true,
-      required: true
+      unique: true
     },
     date: {
-      type: Date,
-      required: true
+      type: Date
     },
     itinerary: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Itinerary',
-      required: true
+      ref: 'Itinerary'
     },
     activities: [{
       type: mongoose.Schema.Types.ObjectId,

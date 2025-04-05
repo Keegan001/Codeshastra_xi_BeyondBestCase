@@ -1,5 +1,6 @@
 import userValidators from './validators/user.validator.js';
 import itineraryValidators from './validators/itinerary.validator.js';
+import { templateValidationSchemas } from './validators/template.validator.js';
 import { ApiError } from './errorHandler.js';
 
 /**
@@ -7,7 +8,8 @@ import { ApiError } from './errorHandler.js';
  */
 const validators = {
   ...userValidators,
-  ...itineraryValidators
+  ...itineraryValidators,
+  ...templateValidationSchemas
 };
 
 /**

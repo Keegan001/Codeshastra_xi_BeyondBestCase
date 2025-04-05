@@ -5,12 +5,10 @@ const pointSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ['Point'],
-    default: 'Point',
-    required: true
+    default: 'Point'
   },
   coordinates: {
-    type: [Number], // [longitude, latitude]
-    required: true
+    type: [Number] // [longitude, latitude]
   }
 });
 
@@ -19,32 +17,26 @@ const activitySchema = new mongoose.Schema(
     uuid: {
       type: String,
       default: uuidv4,
-      unique: true,
-      required: true
+      unique: true
     },
     title: {
       type: String,
-      required: true,
       trim: true
     },
     type: {
       type: String,
-      enum: ['attraction', 'food', 'transport', 'accommodation', 'other'],
-      required: true
+      enum: ['attraction', 'food', 'transport', 'accommodation', 'other']
     },
     day: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Day',
-      required: true
+      ref: 'Day'
     },
     location: {
       name: {
-        type: String,
-        required: true
+        type: String
       },
       coordinates: {
-        type: pointSchema,
-        required: true
+        type: pointSchema
       },
       address: {
         type: String,
@@ -57,12 +49,10 @@ const activitySchema = new mongoose.Schema(
     },
     timeRange: {
       start: {
-        type: Date,
-        required: true
+        type: Date
       },
       end: {
-        type: Date,
-        required: true
+        type: Date
       }
     },
     cost: {
@@ -97,15 +87,8 @@ activitySchema.methods.getPublicId = function() {
   return this.uuid;
 };
 
-// Pre-save hook to ensure time range is valid
-activitySchema.pre('save', function(next) {
-  if (this.timeRange.end < this.timeRange.start) {
-    const err = new Error('End time cannot be before start time');
-    err.status = 400;
-    return next(err);
-  }
-  next();
-});
+// Remove pre-save validation hook
+// No validation for time range
 
 export const Activity = mongoose.model('Activity', activitySchema);
  

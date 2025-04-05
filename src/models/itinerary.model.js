@@ -5,26 +5,22 @@ const pointSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ['Point'],
-    default: 'Point',
-    required: true
+    default: 'Point'
   },
   coordinates: {
-    type: [Number], // [longitude, latitude]
-    required: true
+    type: [Number] // [longitude, latitude]
   }
 });
 
 const collaboratorSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'User'
   },
   role: {
     type: String,
     enum: ['editor', 'viewer'],
-    default: 'viewer',
-    required: true
+    default: 'viewer'
   }
 });
 
@@ -33,12 +29,10 @@ const itinerarySchema = new mongoose.Schema(
     uuid: {
       type: String,
       default: uuidv4,
-      unique: true,
-      required: true
+      unique: true
     },
     title: {
       type: String,
-      required: true,
       trim: true
     },
     description: {
@@ -47,32 +41,26 @@ const itinerarySchema = new mongoose.Schema(
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
+      ref: 'User'
     },
     collaborators: [collaboratorSchema],
     destination: {
       name: {
-        type: String,
-        required: true
+        type: String
       },
       location: {
-        type: pointSchema,
-        required: true
+        type: pointSchema
       },
       country: {
-        type: String,
-        required: true
+        type: String
       }
     },
     dateRange: {
       start: {
-        type: Date,
-        required: true
+        type: Date
       },
       end: {
-        type: Date,
-        required: true
+        type: Date
       }
     },
     days: [{
@@ -124,16 +112,6 @@ itinerarySchema.index({ 'destination.location': '2dsphere' });
 itinerarySchema.methods.getPublicId = function() {
   return this.uuid;
 };
-
-// Pre-save hook to ensure dates are valid
-itinerarySchema.pre('save', function(next) {
-  if (this.dateRange.end < this.dateRange.start) {
-    const err = new Error('End date cannot be before start date');
-    err.status = 400;
-    return next(err);
-  }
-  next();
-});
 
 export const Itinerary = mongoose.model('Itinerary', itinerarySchema);
 

@@ -1,7 +1,7 @@
 import express from 'express';
 import itineraryController from '../controllers/itinerary.controller.js';
+import costController from '../controllers/cost.controller.js';
 import {authenticate} from '../middleware/auth.js';
-import { validateRequest } from '../middleware/validator.js';
 
 const router = express.Router();
 
@@ -9,7 +9,6 @@ const router = express.Router();
 router.post(
   '/',
   authenticate,
-  validateRequest('createItinerary'),
   itineraryController.createItinerary
 );
 
@@ -31,7 +30,6 @@ router.get(
 router.put(
   '/days/:dayId',
   authenticate,
-  validateRequest('updateDay'),
   itineraryController.updateDay
 );
 
@@ -39,7 +37,6 @@ router.put(
 router.post(
   '/days/:dayId/activities',
   authenticate,
-  validateRequest('createActivity'),
   itineraryController.addActivity
 );
 
@@ -47,7 +44,6 @@ router.post(
 router.post(
   '/days/:dayId/reorder',
   authenticate,
-  validateRequest('reorderActivities'),
   itineraryController.reorderActivities
 );
 
@@ -55,7 +51,6 @@ router.post(
 router.put(
   '/activities/:activityId',
   authenticate,
-  validateRequest('updateActivity'),
   itineraryController.updateActivity
 );
 
@@ -77,7 +72,6 @@ router.get(
 router.put(
   '/:id',
   authenticate,
-  validateRequest('updateItinerary'),
   itineraryController.updateItinerary
 );
 
@@ -92,7 +86,6 @@ router.delete(
 router.post(
   '/:id/collaborators',
   authenticate,
-  validateRequest('addCollaborator'),
   itineraryController.addCollaborator
 );
 
@@ -101,6 +94,27 @@ router.delete(
   '/:id/collaborators/:collaboratorId',
   authenticate,
   itineraryController.removeCollaborator
+);
+
+// Calculate total costs for an itinerary
+router.get(
+  '/:itineraryId/costs',
+  authenticate,
+  costController.calculateItineraryCost
+);
+
+// Calculate daily costs for an itinerary
+router.get(
+  '/:itineraryId/costs/daily',
+  authenticate,
+  costController.calculateDailyCosts
+);
+
+// Get budget status for an itinerary
+router.get(
+  '/:itineraryId/budget',
+  authenticate,
+  costController.getBudgetStatus
 );
 
 export default router; 

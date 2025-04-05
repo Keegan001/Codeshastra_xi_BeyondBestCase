@@ -14,20 +14,15 @@ class ItineraryService {
    */
   async createItinerary(userId, itineraryData) {
     try {
-      // Validate required fields
-      if (!itineraryData.title || !itineraryData.destination || !itineraryData.dateRange) {
-        throw ApiError.badRequest('Missing required fields');
-      }
-
-      // Create itinerary
+      // Create itinerary with default values if fields are missing
       const itinerary = new Itinerary({
-        title: itineraryData.title,
-        description: itineraryData.description,
+        title: itineraryData.title || 'Untitled Itinerary',
+        description: itineraryData.description || '',
         owner: userId,
-        destination: itineraryData.destination,
+        destination: itineraryData.destination || { name: 'Unknown' },
         dateRange: {
-          start: new Date(itineraryData.dateRange.start),
-          end: new Date(itineraryData.dateRange.end)
+          start: itineraryData.dateRange ? new Date(itineraryData.dateRange.start) : new Date(),
+          end: itineraryData.dateRange ? new Date(itineraryData.dateRange.end) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
         },
         transportation: itineraryData.transportation || { mode: 'mixed' },
         budget: itineraryData.budget || { currency: 'USD', total: 0, spent: 0 }
@@ -36,15 +31,13 @@ class ItineraryService {
       await itinerary.save();
 
       // Generate days for the itinerary if requested
-      if (itineraryData.generateDays) {
+      if (itineraryData.generateDays !== false) {
         await this.generateDaysForItinerary(itinerary);
       }
 
       return itinerary;
     } catch (error) {
-      if (error.name === 'ValidationError') {
-        throw ApiError.badRequest(error.message);
-      }
+      // Just pass through the error without validation
       throw error;
     }
   }

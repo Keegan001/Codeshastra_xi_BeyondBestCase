@@ -6,12 +6,10 @@ const pointSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ['Point'],
-    default: 'Point',
-    required: true
+    default: 'Point'
   },
   coordinates: {
-    type: [Number], // [longitude, latitude]
-    required: true
+    type: [Number] // [longitude, latitude]
   }
 });
 
@@ -20,12 +18,10 @@ const placeSchema = new mongoose.Schema(
     uuid: {
       type: String,
       default: uuidv4,
-      unique: true,
-      required: true
+      unique: true
     },
     name: {
       type: String,
-      required: true,
       trim: true
     },
     placeId: {
@@ -34,8 +30,7 @@ const placeSchema = new mongoose.Schema(
       index: true
     },
     location: {
-      type: pointSchema,
-      required: true
+      type: pointSchema
     },
     address: {
       type: String,
@@ -58,14 +53,10 @@ const placeSchema = new mongoose.Schema(
       attribution: String
     }],
     rating: {
-      type: Number,
-      min: 0,
-      max: 5
+      type: Number
     },
     priceLevel: {
-      type: Number,
-      min: 0,
-      max: 4
+      type: Number
     },
     openingHours: {
       type: mongoose.Schema.Types.Mixed

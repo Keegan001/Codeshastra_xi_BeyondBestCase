@@ -3,7 +3,7 @@ dotenv.config();
 
 const config = {
   // Server configuration
-  port: process.env.PORT || 3000,
+  port: process.env.PORT || 5000,
   nodeEnv: process.env.NODE_ENV || 'development',
   
   // MongoDB configuration
@@ -17,7 +17,7 @@ const config = {
   },
   
   // CORS configuration
-  corsOrigin: process.env.CORS_ORIGIN || '*',
+  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:5173',
   
   // Email configuration (for password reset, notifications, etc.)
   email: {
@@ -37,10 +37,13 @@ const config = {
   upload: {
     maxSize: parseInt(process.env.UPLOAD_MAX_SIZE || '5242880', 10), // 5MB default
     allowedTypes: ['image/jpeg', 'image/png', 'image/gif']
-  }
+  },
+  
+  // Google Places API
+  googlePlacesApiKey: process.env.GOOGLE_MAPS_API_KEY || ''
 };
 
-// Validate required config
+// Validate required configs
 const requiredConfigs = ['jwt.secret'];
 requiredConfigs.forEach(configKey => {
   if (config.nodeEnv === 'production' && (!config[configKey] || config[configKey] === 'your-secret-key')) {

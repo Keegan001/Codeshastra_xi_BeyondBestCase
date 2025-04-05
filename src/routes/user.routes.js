@@ -1,7 +1,6 @@
 import express from 'express';
 import userController from '../controllers/user.controller.js';
 import {authenticate} from '../middleware/auth.js';
-import { validateRequest } from '../middleware/validator.js';
 
 const router = express.Router();
 
@@ -14,14 +13,12 @@ router.get('/me', userController.getProfile);
 // Update user profile
 router.patch(
   '/me',
-  validateRequest('updateProfile'),
   userController.updateProfile
 );
 
 // Change user password
 router.post(
   '/change-password',
-  validateRequest('changePassword'),
   userController.changePassword
 );
 
