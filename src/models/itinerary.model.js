@@ -12,6 +12,23 @@ const pointSchema = new mongoose.Schema({
   }
 });
 
+const locationSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    trim: true
+  },
+  description: {
+    type: String,
+    trim: true
+  },
+  placeId: {
+    type: String
+  },
+  location: {
+    type: pointSchema
+  }
+});
+
 const collaboratorSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
@@ -55,6 +72,7 @@ const itinerarySchema = new mongoose.Schema(
         type: String
       }
     },
+    routeLocations: [locationSchema],
     dateRange: {
       start: {
         type: Date
@@ -107,6 +125,7 @@ const itinerarySchema = new mongoose.Schema(
 // Index for efficient queries
 itinerarySchema.index({ owner: 1 });
 itinerarySchema.index({ 'destination.location': '2dsphere' });
+itinerarySchema.index({ 'routeLocations.location': '2dsphere' });
 
 // Method to get the public ID (UUID)
 itinerarySchema.methods.getPublicId = function() {

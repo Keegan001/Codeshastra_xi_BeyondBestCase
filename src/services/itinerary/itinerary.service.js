@@ -29,6 +29,11 @@ class ItineraryService {
         budget: itineraryData.budget || { currency: 'USD', total: 0, spent: 0 }
       });
 
+      // Add route locations if provided
+      if (itineraryData.routeLocations && Array.isArray(itineraryData.routeLocations)) {
+        itinerary.routeLocations = itineraryData.routeLocations;
+      }
+
       await itinerary.save();
 
       // Generate days for the itinerary if requested
@@ -201,7 +206,8 @@ class ItineraryService {
       'destination',
       'dateRange',
       'transportation',
-      'budget'
+      'budget',
+      'routeLocations'
     ];
 
     // Filter update data
