@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link, Navigate, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
-import { getItineraryById, updateItinerary } from '../services/itinerary'
-import { searchPlaces, getPlaceById } from '../services/place'
+import { getItineraryById } from '../services/itinerary'
+import { searchPlaces } from '../services/place'
+import axios from 'axios'
 
 function DayPlanner() {
   const { id, dayId } = useParams()
@@ -23,7 +24,8 @@ function DayPlanner() {
     startTime: '',
     endTime: '',
     notes: '',
-    cost: 0
+    cost: 0,
+    type: 'other'
   })
   const [isAddingActivity, setIsAddingActivity] = useState(false)
   const [selectedPlace, setSelectedPlace] = useState(null)
@@ -33,27 +35,104 @@ function DayPlanner() {
   }
   
   useEffect(() => {
-    loadItinerary()
+    loadData()
   }, [id, dayId])
   
-  function loadItinerary() {
+  // Load both itinerary and day data
+  function loadData() {
     setIsLoading(true)
+    setError(null)
+    
+    // First, get the itinerary for context
     getItineraryById(id)
-      .then(data => {
-        setItinerary(data)
-        const currentDay = data.days.find(d => d.id === dayId)
-        if (currentDay) {
-          setDay(currentDay)
+      .then(itineraryData => {
+        setItinerary(itineraryData)
+        
+        // Now, directly fetch the day data from the backend
+        const token = localStorage.getItem('token')
+        return axios.get(`http://localhost:5000/api/itineraries/days/${dayId}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        })
+      })
+      .then(response => {
+        console.log('Day data response:', response.data)
+        
+        // Handle the response based on API format
+        if (response.data && response.data.status === 'success' && response.data.data && response.data.data.day) {
+          const dayData = response.data.data.day
+          console.log('Raw day data:', dayData)
+          
+          // Transform the backend day data to frontend format
+          const transformedDay = transformDayData(dayData)
+          console.log('Transformed day data:', transformedDay)
+          setDay(transformedDay)
         } else {
-          setError('Day not found in this itinerary')
+          throw new Error('Day data format is invalid')
         }
+        
         setIsLoading(false)
       })
       .catch(err => {
-        setError('Failed to load itinerary details')
+        console.error('Error loading data:', err)
+        setError('Failed to load day details. Please try again.')
         setIsLoading(false)
-        console.error(err)
       })
+  }
+  
+  // Transform backend day data to match frontend format
+  function transformDayData(backendDay) {
+    console.log('Transforming day data:', backendDay)
+    
+    // Determine the day number based on date if not provided
+    let dayNumber = backendDay.dayNumber
+    
+    if (!dayNumber && itinerary && itinerary.dateRange && backendDay.date) {
+      const startDate = new Date(itinerary.dateRange.start)
+      const dayDate = new Date(backendDay.date)
+      dayNumber = Math.floor((dayDate - startDate) / (1000 * 60 * 60 * 24)) + 1
+    }
+    
+    // Check if activities is populated
+    const activities = backendDay.activities || []
+    
+    // Transform activities to match frontend format
+    const transformedActivities = activities.map((activity, index) => {
+      console.log(`Processing activity ${index}:`, activity)
+      
+      return {
+        id: activity._id || activity.id || activity.uuid || `activity-${index}`,
+        title: activity.title || 'Unnamed Activity',
+        type: activity.type || 'other',
+        startTime: activity.timeRange?.start ? formatTimeFromDate(activity.timeRange.start) : '',
+        endTime: activity.timeRange?.end ? formatTimeFromDate(activity.timeRange.end) : '',
+        notes: activity.notes || activity.description || '',
+        cost: activity.cost?.amount || activity.cost || 0,
+        placeName: activity.location?.name || '',
+        placeId: activity.location?.placeId || '',
+        // Keep original data for reference
+        originalData: activity
+      }
+    })
+    
+    return {
+      id: backendDay._id || backendDay.id || backendDay.uuid,
+      dayNumber: dayNumber || 1,
+      date: backendDay.date,
+      notes: backendDay.notes || '',
+      activities: transformedActivities
+    }
+  }
+  
+  // Helper function to format time from an ISO date string
+  function formatTimeFromDate(dateString) {
+    try {
+      const date = new Date(dateString)
+      return date.toTimeString().substring(0, 5) // Returns HH:MM format
+    } catch (e) {
+      return ''
+    }
   }
   
   function handleSearch(e) {
@@ -107,80 +186,98 @@ function DayPlanner() {
       }
     }
     
-    // Clone the itinerary and update the day's activities
-    const updatedItinerary = { ...itinerary }
-    const dayIndex = updatedItinerary.days.findIndex(d => d.id === dayId)
+    setIsLoading(true)
     
-    if (dayIndex === -1) {
-      setError('Day not found')
-      return
+    // Prepare the activity data for the backend
+    const activityData = {
+      title: newActivity.title,
+      type: newActivity.type || 'other',
+      notes: newActivity.notes,
+      cost: { amount: parseFloat(newActivity.cost) || 0 },
+      location: newActivity.placeName ? {
+        name: newActivity.placeName,
+        placeId: newActivity.placeId
+      } : null
     }
     
-    // Generate a simple ID for the new activity
-    const activityId = Date.now().toString()
-    const activityWithId = { ...newActivity, id: activityId }
+    // Add time range if provided
+    if (newActivity.startTime || newActivity.endTime) {
+      activityData.timeRange = {}
+      
+      if (newActivity.startTime) {
+        // Convert HH:MM to ISO date
+        const [hours, minutes] = newActivity.startTime.split(':')
+        const startDate = new Date()
+        startDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0)
+        activityData.timeRange.start = startDate.toISOString()
+      }
+      
+      if (newActivity.endTime) {
+        // Convert HH:MM to ISO date
+        const [hours, minutes] = newActivity.endTime.split(':')
+        const endDate = new Date()
+        endDate.setHours(parseInt(hours, 10), parseInt(minutes, 10), 0, 0)
+        activityData.timeRange.end = endDate.toISOString()
+      }
+    }
     
-    updatedItinerary.days[dayIndex].activities = [
-      ...(updatedItinerary.days[dayIndex].activities || []),
-      activityWithId
-    ]
+    console.log('Adding activity:', activityData)
     
-    setIsLoading(true)
-    updateItinerary(id, updatedItinerary)
-      .then(updated => {
-        setItinerary(updated)
-        const updatedDay = updated.days.find(d => d.id === dayId)
-        setDay(updatedDay)
-        // Reset the form
-        setNewActivity({
-          title: '',
-          placeId: '',
-          placeName: '',
-          startTime: '',
-          endTime: '',
-          notes: '',
-          cost: 0
-        })
-        setSelectedPlace(null)
-        setIsAddingActivity(false)
-        setIsLoading(false)
+    // Make direct API call to add activity to day
+    const token = localStorage.getItem('token')
+    axios.post(`http://localhost:5000/api/itineraries/days/${dayId}/activities`, activityData, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(response => {
+      console.log('Activity added:', response.data)
+      
+      // Reset the form
+      setNewActivity({
+        title: '',
+        placeId: '',
+        placeName: '',
+        startTime: '',
+        endTime: '',
+        notes: '',
+        cost: 0,
+        type: 'other'
       })
-      .catch(err => {
-        setError('Failed to add activity')
-        setIsLoading(false)
-        console.error(err)
-      })
+      setSelectedPlace(null)
+      setIsAddingActivity(false)
+      
+      // Reload the day data to show the new activity
+      loadData()
+    })
+    .catch(err => {
+      console.error('Error adding activity:', err)
+      setError('Failed to add activity. Please try again.')
+      setIsLoading(false)
+    })
   }
   
   function removeActivity(activityId) {
     if (!window.confirm('Are you sure you want to remove this activity?')) return
     
-    // Clone the itinerary and update the day's activities
-    const updatedItinerary = { ...itinerary }
-    const dayIndex = updatedItinerary.days.findIndex(d => d.id === dayId)
-    
-    if (dayIndex === -1) {
-      setError('Day not found')
-      return
-    }
-    
-    updatedItinerary.days[dayIndex].activities = updatedItinerary.days[dayIndex].activities.filter(
-      activity => activity.id !== activityId
-    )
-    
     setIsLoading(true)
-    updateItinerary(id, updatedItinerary)
-      .then(updated => {
-        setItinerary(updated)
-        const updatedDay = updated.days.find(d => d.id === dayId)
-        setDay(updatedDay)
-        setIsLoading(false)
-      })
-      .catch(err => {
-        setError('Failed to remove activity')
-        setIsLoading(false)
-        console.error(err)
-      })
+    
+    // Make direct API call to remove activity
+    const token = localStorage.getItem('token')
+    axios.delete(`http://localhost:5000/api/itineraries/activities/${activityId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(() => {
+      // Reload the day data to reflect the changes
+      loadData()
+    })
+    .catch(err => {
+      console.error('Error removing activity:', err)
+      setError('Failed to remove activity. Please try again.')
+      setIsLoading(false)
+    })
   }
 
   if (isLoading && !day) {
@@ -221,7 +318,9 @@ function DayPlanner() {
     : []
   
   // Calculate total cost for the day
-  const totalCost = sortedActivities.reduce((sum, activity) => sum + (activity.cost || 0), 0)
+  const totalCost = sortedActivities.reduce((sum, activity) => {
+    return sum + (parseFloat(activity.cost) || 0)
+  }, 0)
   
   return (
     <div className="max-w-4xl mx-auto py-8 px-4">
@@ -334,6 +433,30 @@ function DayPlanner() {
                   
                   <div>
                     <label 
+                      htmlFor="type" 
+                      className="block text-gray-700 font-medium mb-2"
+                    >
+                      Activity Type
+                    </label>
+                    <select
+                      id="type"
+                      name="type"
+                      value={newActivity.type}
+                      onChange={handleActivityInputChange}
+                      className="w-full px-4 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="other">Other</option>
+                      <option value="attraction">Attraction</option>
+                      <option value="food">Food</option>
+                      <option value="transport">Transportation</option>
+                      <option value="accommodation">Accommodation</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label 
                       htmlFor="cost" 
                       className="block text-gray-700 font-medium mb-2"
                     >
@@ -425,7 +548,8 @@ function DayPlanner() {
                         startTime: '',
                         endTime: '',
                         notes: '',
-                        cost: 0
+                        cost: 0,
+                        type: 'other'
                       })
                     }}
                     className="bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
@@ -437,7 +561,7 @@ function DayPlanner() {
             </div>
           )}
           
-          {sortedActivities.length === 0 ? (
+          {!sortedActivities || sortedActivities.length === 0 ? (
             <div className="text-center py-8 bg-gray-50 rounded-lg">
               <h3 className="text-lg font-medium text-gray-700 mb-2">No Activities Planned</h3>
               <p className="text-gray-600 mb-4">
@@ -454,57 +578,70 @@ function DayPlanner() {
           ) : (
             <div className="bg-white rounded-lg border">
               <ul className="divide-y divide-gray-200">
-                {sortedActivities.map((activity, index) => (
-                  <li 
-                    key={activity.id} 
-                    className={`p-4 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                  >
-                    <div className="flex justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <h3 className="text-lg font-medium">{activity.title}</h3>
-                          {activity.cost > 0 && (
-                            <span className="ml-3 bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
-                              ${activity.cost.toFixed(2)}
-                            </span>
+                {sortedActivities.map((activity, index) => {
+                  const activityId = activity.id || activity._id || `activity-${index}`;
+                  const activityType = activity.type || 'other';
+                  
+                  // Icon based on activity type
+                  let icon = '📝'; // Default
+                  if (activityType === 'attraction') icon = '🏛️';
+                  if (activityType === 'food') icon = '🍽️';
+                  if (activityType === 'transport') icon = '🚌';
+                  if (activityType === 'accommodation') icon = '🏨';
+                  
+                  return (
+                    <li 
+                      key={activityId} 
+                      className={`p-4 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+                    >
+                      <div className="flex justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center">
+                            <span className="mr-2">{icon}</span>
+                            <h3 className="text-lg font-medium">{activity.title}</h3>
+                            {parseFloat(activity.cost) > 0 && (
+                              <span className="ml-3 bg-gray-100 text-gray-800 px-2 py-1 rounded text-sm">
+                                ${parseFloat(activity.cost).toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                          
+                          {(activity.startTime || activity.endTime) && (
+                            <p className="text-gray-600 mt-1">
+                              {activity.startTime && formatTime(activity.startTime)}
+                              {activity.startTime && activity.endTime && ' - '}
+                              {activity.endTime && formatTime(activity.endTime)}
+                            </p>
+                          )}
+                          
+                          {activity.placeName && (
+                            <p className="text-indigo-600 text-sm mt-1">
+                              {activity.placeName}
+                            </p>
+                          )}
+                          
+                          {activity.notes && (
+                            <p className="text-gray-700 mt-2 text-sm">
+                              {activity.notes}
+                            </p>
                           )}
                         </div>
                         
-                        {(activity.startTime || activity.endTime) && (
-                          <p className="text-gray-600 mt-1">
-                            {activity.startTime && formatTime(activity.startTime)}
-                            {activity.startTime && activity.endTime && ' - '}
-                            {activity.endTime && formatTime(activity.endTime)}
-                          </p>
-                        )}
-                        
-                        {activity.placeName && (
-                          <p className="text-indigo-600 text-sm mt-1">
-                            {activity.placeName}
-                          </p>
-                        )}
-                        
-                        {activity.notes && (
-                          <p className="text-gray-700 mt-2 text-sm">
-                            {activity.notes}
-                          </p>
-                        )}
+                        <div className="flex">
+                          <button
+                            onClick={() => removeActivity(activityId)}
+                            className="text-red-600 hover:text-red-800"
+                            title="Remove activity"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
-                      
-                      <div>
-                        <button
-                          onClick={() => removeActivity(activity.id)}
-                          className="text-red-600 hover:text-red-800"
-                          title="Remove activity"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
@@ -529,6 +666,20 @@ function formatTime(timeString) {
     })
   } catch (e) {
     return timeString
+  }
+}
+
+// Helper function to format datetime from ISO string to just time
+function formatDateTime(dateString) {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { 
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (e) {
+    return dateString;
   }
 }
 
