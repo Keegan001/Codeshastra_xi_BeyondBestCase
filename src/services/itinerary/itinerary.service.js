@@ -758,13 +758,19 @@ class ItineraryService {
     }
     
     // Check if user is owner or editor collaborator
-    const isOwner = itinerary.owner.toString() === userId;
+    const isOwner = String(itinerary.owner) === String(userId);
     const isEditorCollaborator = itinerary.collaborators.some(
-      c => c.user.toString() === userId && c.role === 'editor'
+      c => String(c.user) === String(userId) && c.role === 'editor'
     );
     
+    console.log('Process AI Itinerary - Authentication Check:');
+    console.log('User ID from token:', userId, 'type:', typeof userId);
+    console.log('Itinerary owner ID:', itinerary.owner, 'type:', typeof itinerary.owner);
+    console.log('String comparison result:', String(itinerary.owner) === String(userId));
+    console.log('Is editor:', isEditorCollaborator);
+
     if (!isOwner && !isEditorCollaborator) {
-      throw ApiError.forbidden('Access denied');
+      throw ApiError.forbidden('Access denied - User must be the owner or an editor');
     }
     
     // Validate AI data
@@ -1056,6 +1062,12 @@ class ItineraryService {
         console.error(`Error processing day ${dayData.day}:`, error);
         // Continue with next day
       }
+    }
+    
+    // Store additional suggestions if available
+    if (aiData.itinerary.additional_suggestions) {
+      console.log('Storing additional suggestions from AI response');
+      itinerary.additionalSuggestions = aiData.itinerary.additional_suggestions;
     }
     
     // Save updated itinerary

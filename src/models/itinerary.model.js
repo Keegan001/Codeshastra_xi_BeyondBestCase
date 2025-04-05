@@ -202,6 +202,10 @@ const itinerarySchema = new mongoose.Schema(
     version: {
       type: Number,
       default: 1
+    },
+    additionalSuggestions: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null
     }
   },
   { timestamps: true }
