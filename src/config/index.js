@@ -1,18 +1,48 @@
 require('dotenv').config();
 
 const config = {
-  env: process.env.NODE_ENV || 'development',
-  port: process.env.PORT || 5000,
-  mongoUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/travel-planner',
-  jwtSecret: process.env.JWT_SECRET || 'your-secret-key',
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
-  corsOrigin: process.env.CORS_ORIGIN || '*'
+  // Server configuration
+  port: process.env.PORT || 3000,
+  nodeEnv: process.env.NODE_ENV || 'development',
+  
+  // MongoDB configuration
+  mongodbUri: process.env.MONGODB_URI || 'mongodb://localhost:27017/travel-planner',
+  
+  // JWT configuration
+  jwt: {
+    secret: process.env.JWT_SECRET || 'your-super-secret-jwt-key-change-in-production',
+    expiresIn: process.env.JWT_EXPIRES_IN || '1d',
+    refreshExpiresIn: '7d'
+  },
+  
+  // CORS configuration
+  corsOrigin: process.env.CORS_ORIGIN || '*',
+  
+  // Email configuration (for password reset, notifications, etc.)
+  email: {
+    from: process.env.EMAIL_FROM || 'noreply@example.com',
+    smtp: {
+      host: process.env.EMAIL_HOST,
+      port: parseInt(process.env.EMAIL_PORT || '587', 10),
+      secure: process.env.EMAIL_SECURE === 'true',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    }
+  },
+  
+  // File upload configurations
+  upload: {
+    maxSize: parseInt(process.env.UPLOAD_MAX_SIZE || '5242880', 10), // 5MB default
+    allowedTypes: ['image/jpeg', 'image/png', 'image/gif']
+  }
 };
 
 // Validate required config
-const requiredConfigs = ['jwtSecret'];
+const requiredConfigs = ['jwt.secret'];
 requiredConfigs.forEach(configKey => {
-  if (config.env === 'production' && (!config[configKey] || config[configKey] === 'your-secret-key')) {
+  if (config.nodeEnv === 'production' && (!config[configKey] || config[configKey] === 'your-secret-key')) {
     console.error(`Error: ${configKey} is required in production environment`);
     process.exit(1);
   }

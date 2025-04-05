@@ -1,84 +1,142 @@
-const express = require('express');
-const { body } = require('express-validator');
+const router = require('express').Router();
 const authController = require('../controllers/auth.controller');
-const { validate } = require('../middleware/validator');
-const { authenticate } = require('../middleware/auth');
-
-const router = express.Router();
+const auth = require('../middleware/auth');
+const { validateRequest } = require('../middleware/validator');
 
 /**
- * @route POST /api/auth/register
- * @desc Register a new user
- * @access Public
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Register a new user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserRegister'
+ *     responses:
+ *       201:
+ *         description: User registered successfully
+ *       400:
+ *         description: Invalid request data
  */
 router.post(
   '/register',
-  [
-    body('email').isEmail().withMessage('Please provide a valid email'),
-    body('password')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 8 characters long')
-      .matches(/\d/)
-      .withMessage('Password must contain at least one number'),
-    body('name').trim().notEmpty().withMessage('Name is required'),
-    validate
-  ],
+  validateRequest('registerUser'),
   authController.register
 );
 
 /**
- * @route POST /api/auth/login
- * @desc Login a user
- * @access Public
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Log in a user
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UserLogin'
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *       401:
+ *         description: Invalid credentials
  */
 router.post(
   '/login',
-  [
-    body('email').isEmail().withMessage('Please provide a valid email'),
-    body('password').notEmpty().withMessage('Password is required'),
-    validate
-  ],
+  validateRequest('loginUser'),
   authController.login
 );
 
 /**
- * @route POST /api/auth/forgot-password
- * @desc Request password reset
- * @access Public
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Request password reset
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *     responses:
+ *       200:
+ *         description: Password reset email sent
+ *       404:
+ *         description: User not found
  */
 router.post(
   '/forgot-password',
-  [
-    body('email').isEmail().withMessage('Please provide a valid email'),
-    validate
-  ],
+  validateRequest('forgotPassword'),
   authController.forgotPassword
 );
 
 /**
- * @route POST /api/auth/reset-password
- * @desc Reset password with token
- * @access Public
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset password with token
+ *     tags: [Authentication]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - token
+ *               - password
+ *               - confirmPassword
+ *             properties:
+ *               token:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *                 format: password
+ *                 minLength: 8
+ *               confirmPassword:
+ *                 type: string
+ *                 format: password
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Invalid token or password
  */
 router.post(
   '/reset-password',
-  [
-    body('token').notEmpty().withMessage('Token is required'),
-    body('newPassword')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 8 characters long')
-      .matches(/\d/)
-      .withMessage('Password must contain at least one number'),
-    validate
-  ],
+  validateRequest('resetPassword'),
   authController.resetPassword
 );
 
 /**
- * @route POST /api/auth/refresh
- * @desc Refresh user token
- * @access Private
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: New access token
+ *       401:
+ *         description: Invalid refresh token
  */
-router.post('/refresh', authenticate, authController.refreshToken);
+router.post(
+  '/refresh',
+  auth.authenticate,
+  authController.refreshToken
+);
 
 module.exports = router; 

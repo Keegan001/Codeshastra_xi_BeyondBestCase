@@ -1,26 +1,49 @@
-const { validationResult } = require('express-validator');
+const userValidators = require('./validators/user.validator');
+const itineraryValidators = require('./validators/itinerary.validator');
 const { ApiError } = require('./errorHandler');
 
 /**
- * Middleware to validate request data using express-validator
- * Must be used after validation rules are defined
+ * Combines all validators into a single object
  */
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  
-  if (!errors.isEmpty()) {
-    const messages = errors.array().map(error => ({
-      field: error.path,
-      message: error.msg
-    }));
-    
-    return next(ApiError.badRequest({ 
-      message: 'Validation error', 
-      errors: messages 
-    }));
+const validators = {
+  ...userValidators,
+  ...itineraryValidators
+};
+
+/**
+ * Validates request data against a schema
+ * @param {String} schema - The schema name to validate against
+ * @returns {Function} Express middleware function
+ */
+const validateRequest = (schema) => (req, res, next) => {
+  // Check if schema exists
+  if (!validators[schema]) {
+    return next(ApiError.internal(`Validation schema '${schema}' not found`));
   }
-  
+
+  // Validate request body
+  const { error, value } = validators[schema].validate(req.body, {
+    abortEarly: false,
+    stripUnknown: true,
+    errors: {
+      wrap: {
+        label: false
+      }
+    }
+  });
+
+  if (error) {
+    const errorMessage = error.details
+      .map((detail) => detail.message)
+      .join(', ');
+    return next(ApiError.badRequest(errorMessage));
+  }
+
+  // Replace request body with validated value
+  req.body = value;
   next();
 };
 
-module.exports = { validate }; 
+module.exports = {
+  validateRequest
+}; 

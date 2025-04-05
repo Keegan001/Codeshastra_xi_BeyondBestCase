@@ -1,49 +1,105 @@
 const jwt = require('jsonwebtoken');
 const { ApiError } = require('./errorHandler');
+const config = require('../config');
+const { User } = require('../models');
 
 /**
- * Middleware to authenticate requests using JWT
- * Verifies the token and adds user data to the request object
+ * Authentication middleware
  */
-const authenticate = (req, res, next) => {
-  try {
-    // Get token from header
-    const authHeader = req.header('Authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw ApiError.unauthorized('Authentication token is required');
+const auth = {
+  /**
+   * Authenticate a user using JWT
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  authenticate: async (req, res, next) => {
+    try {
+      // Get token from authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw ApiError.unauthorized('Authentication required');
+      }
+
+      const token = authHeader.split(' ')[1];
+      if (!token) {
+        throw ApiError.unauthorized('Authentication token not provided');
+      }
+
+      // Verify token
+      const decoded = jwt.verify(token, config.jwt.secret);
+      
+      // Get user from database
+      const user = await User.findById(decoded.id).select('-password');
+      if (!user) {
+        throw ApiError.unauthorized('Invalid credentials');
+      }
+
+      // Check if token was issued before password was last changed
+      if (user.passwordChangedAt) {
+        const passwordChangedTime = parseInt(user.passwordChangedAt.getTime() / 1000, 10);
+        if (decoded.iat < passwordChangedTime) {
+          throw ApiError.unauthorized('Password changed recently. Please log in again');
+        }
+      }
+
+      // Set user in request object
+      req.user = user;
+      next();
+    } catch (error) {
+      if (error.name === 'JsonWebTokenError') {
+        return next(ApiError.unauthorized('Invalid or expired token'));
+      }
+      next(error);
     }
-    
-    const token = authHeader.split(' ')[1];
-    
-    if (!token) {
-      throw ApiError.unauthorized('Authentication token is required');
-    }
-    
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    
-    // Add user info to request
-    req.user = decoded;
-    
-    next();
-  } catch (err) {
-    if (err.name === 'JsonWebTokenError' || err.name === 'TokenExpiredError') {
-      return next(ApiError.unauthorized('Invalid or expired token'));
-    }
-    next(err);
+  },
+
+  /**
+   * Check if user has required roles
+   * @param {...String} roles - Required roles
+   * @returns {Function} Middleware function
+   */
+  authorize: (...roles) => {
+    return (req, res, next) => {
+      // Check if authentication middleware has run first
+      if (!req.user) {
+        return next(ApiError.unauthorized('Authentication required'));
+      }
+
+      // Check if user has required role
+      if (!roles.includes(req.user.role)) {
+        return next(ApiError.forbidden('Insufficient permissions'));
+      }
+
+      next();
+    };
+  },
+
+  /**
+   * Generate JWT token for user
+   * @param {Object} user - User object
+   * @returns {String} JWT token
+   */
+  generateToken: (user) => {
+    return jwt.sign(
+      { id: user._id, role: user.role, email: user.email },
+      config.jwt.secret,
+      { expiresIn: config.jwt.expiresIn }
+    );
+  },
+
+  /**
+   * Generate refresh token for user
+   * @param {Object} user - User object
+   * @returns {String} Refresh token
+   */
+  generateRefreshToken: (user) => {
+    return jwt.sign(
+      { id: user._id },
+      config.jwt.secret,
+      { expiresIn: config.jwt.refreshExpiresIn }
+    );
   }
 };
 
-/**
- * Middleware to check if user has admin role
- * Must be used after authenticate middleware
- */
-const isAdmin = (req, res, next) => {
-  if (!req.user || req.user.role !== 'admin') {
-    return next(ApiError.forbidden('Access denied: Admin privileges required'));
-  }
-  next();
-};
-
-module.exports = { authenticate, isAdmin }; 
+module.exports = auth; 
