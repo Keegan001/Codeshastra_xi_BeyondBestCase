@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Navigate } from 'react-router-dom'
 import { useSelector, useDispatch } from 'react-redux'
 import { createItinerary, clearError } from '../store/slices/itinerarySlice'
+import ItineraryMap from '../components/ItineraryMap'
 
 function CreateItinerary() {
   const { isAuthenticated } = useSelector(state => state.auth)
@@ -18,7 +19,9 @@ function CreateItinerary() {
     isPrivate: false
   })
   
+  const [locations, setLocations] = useState([])
   const [localError, setLocalError] = useState(null)
+  const [showMap, setShowMap] = useState(false)
   
   // Combine local and Redux errors
   const error = localError || reduxError
@@ -55,7 +58,13 @@ function CreateItinerary() {
     
     setLocalError(null)
     
-    dispatch(createItinerary(formData))
+    // Prepare the data to send, including the map locations if available
+    const dataToSend = {
+      ...formData,
+      locations: locations.length > 0 ? locations : undefined
+    }
+    
+    dispatch(createItinerary(dataToSend))
       .unwrap()
       .then(itinerary => {
         console.log('Received itinerary from Redux:', itinerary);
@@ -88,7 +97,7 @@ function CreateItinerary() {
   const isDevelopmentWithMock = import.meta.env.DEV && window.itineraryServiceOffline
   
   return (
-    <div className="max-w-2xl mx-auto py-8">
+    <div className="max-w-7xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">Create New Itinerary</h1>
       
       {isDevelopmentWithMock && (
@@ -104,7 +113,7 @@ function CreateItinerary() {
         </div>
       )}
       
-      <div className="bg-white rounded-lg shadow-md p-8">
+      <div className="bg-white rounded-lg shadow-md p-8 mb-8">
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label 
@@ -225,6 +234,25 @@ function CreateItinerary() {
             </p>
           </div>
           
+          <div className="mb-6">
+            <button
+              type="button"
+              onClick={() => setShowMap(!showMap)}
+              className="text-indigo-600 hover:text-indigo-800 flex items-center"
+            >
+              {showMap ? "Hide Map" : "Plan Route on Map"} 
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                className={`h-5 w-5 ml-1 transition-transform ${showMap ? 'transform rotate-180' : ''}`} 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+          
           <div className="flex space-x-4">
             <button
               type="submit"
@@ -244,8 +272,23 @@ function CreateItinerary() {
           </div>
         </form>
       </div>
+      
+      {showMap && (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <h2 className="text-xl font-bold mb-4">Route Planning</h2>
+          <p className="text-gray-600 mb-6">
+            Add locations to your itinerary using the map below. You can search for places and build a route 
+            of all the places you want to visit.
+          </p>
+          
+          <ItineraryMap 
+            locations={locations} 
+            setLocations={setLocations} 
+          />
+        </div>
+      )}
     </div>
   )
 }
 
-export default CreateItinerary 
+export default CreateItinerary

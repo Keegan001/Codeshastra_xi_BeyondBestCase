@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { fetchItineraryById, updateItinerary, removeItinerary, addDayToItinerary, clearError } from '../store/slices/itinerarySlice'
 import { differenceInDays, addDays, format, parseISO } from 'date-fns'
 import GroupItineraryMembers from '../components/GroupItineraryMembers'
+import ItineraryMap from '../components/ItineraryMap'
 
 function ItineraryDetails() {
   const { id } = useParams()
@@ -22,6 +23,9 @@ function ItineraryDetails() {
     endDate: '',
     isPrivate: false
   })
+
+  const [showMap, setShowMap] = useState(false);
+  const [mapLocations, setMapLocations] = useState([]);
 
   // Helper function to check if the current user is the owner
   const isUserOwner = () => {
@@ -93,6 +97,23 @@ function ItineraryDetails() {
       });
     }
   }, [itinerary])
+
+  // Update map locations when itinerary data is loaded
+  useEffect(() => {
+    if (itinerary && itinerary.routeLocations && itinerary.routeLocations.length > 0) {
+      // Transform routeLocations to the format expected by ItineraryMap
+      const locations = itinerary.routeLocations.map(loc => ({
+        name: loc.name,
+        description: loc.description,
+        placeId: loc.placeId || `place-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, // Generate a placeholder ID if missing
+        lat: loc.location.coordinates ? loc.location.coordinates[1] : 0, // Convert from MongoDB format (lng, lat) to (lat, lng)
+        lng: loc.location.coordinates ? loc.location.coordinates[0] : 0
+      }));
+      setMapLocations(locations);
+    } else {
+      setMapLocations([]);
+    }
+  }, [itinerary]);
 
   function handleEditChange(e) {
     const { name, value, type, checked } = e.target
@@ -210,6 +231,27 @@ function ItineraryDetails() {
           console.error('Failed to generate days', err);
           setLocalError('Failed to generate days for this itinerary');
         });
+    }
+  }
+
+  function handleSaveRoute() {
+    // Save the updated route locations to the itinerary
+    if (mapLocations.length > 0) {
+      dispatch(updateItinerary({ 
+        id, 
+        data: { 
+          locations: mapLocations 
+        } 
+      }))
+      .unwrap()
+      .then(() => {
+        setLocalError(null);
+        console.log('Route locations saved successfully');
+      })
+      .catch(err => {
+        console.error('Failed to save route:', err);
+        setLocalError('Failed to save route locations');
+      });
     }
   }
 
@@ -436,6 +478,48 @@ function ItineraryDetails() {
           )}
         </div>
       </div>
+      
+      <div className="mb-6 flex justify-between items-center">
+        <button
+          type="button"
+          onClick={() => setShowMap(!showMap)}
+          className="text-indigo-600 hover:text-indigo-800 flex items-center"
+        >
+          {showMap ? "Hide Route Map" : "Show Route Map"} 
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            className={`h-5 w-5 ml-1 transition-transform ${showMap ? 'transform rotate-180' : ''}`} 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+      
+      {showMap && (
+        <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Itinerary Route</h2>
+            {isUserOwner() && (
+              <button
+                onClick={handleSaveRoute}
+                className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700"
+              >
+                Save Route Changes
+              </button>
+            )}
+          </div>
+          
+          <ItineraryMap 
+            locations={mapLocations} 
+            setLocations={setMapLocations} 
+            readOnly={!isUserOwner()}
+            onSaveLocations={isUserOwner() ? handleSaveRoute : null}
+          />
+        </div>
+      )}
       
       {/* Add Group Members section below the itinerary details and above the daily plan */}
       {itinerary && (

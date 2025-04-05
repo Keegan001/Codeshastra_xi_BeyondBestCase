@@ -173,6 +173,29 @@ function createItinerary(formData) {
     generateDays: true
   };
 
+  // Add locations data if available
+  if (formData.locations && formData.locations.length > 0) {
+    // If there's at least one location, use it to set the main destination's location
+    if (formData.locations.length > 0) {
+      const mainLocation = formData.locations[0];
+      itineraryData.destination.location = {
+        type: 'Point',
+        coordinates: [mainLocation.lng, mainLocation.lat]  // MongoDB uses [lng, lat] format
+      };
+    }
+    
+    // Add the full array of locations
+    itineraryData.routeLocations = formData.locations.map(loc => ({
+      name: loc.name,
+      description: loc.description,
+      placeId: loc.placeId,
+      location: {
+        type: 'Point',
+        coordinates: [loc.lng, loc.lat]
+      }
+    }));
+  }
+
   console.log('Sending itinerary data to backend:', itineraryData);
 
   return api.post('/itineraries', itineraryData)
@@ -244,6 +267,32 @@ function updateItinerary(id, formData) {
       start: formData.startDate,
       end: formData.endDate
     };
+  }
+
+  // Add locations data if available
+  if (formData.locations && formData.locations.length > 0) {
+    // If there's at least one location, use it to set the main destination's location
+    if (formData.locations.length > 0) {
+      const mainLocation = formData.locations[0];
+      if (!itineraryData.destination) {
+        itineraryData.destination = {};
+      }
+      itineraryData.destination.location = {
+        type: 'Point',
+        coordinates: [mainLocation.lng, mainLocation.lat]  // MongoDB uses [lng, lat] format
+      };
+    }
+    
+    // Add the full array of locations
+    itineraryData.routeLocations = formData.locations.map(loc => ({
+      name: loc.name,
+      description: loc.description,
+      placeId: loc.placeId,
+      location: {
+        type: 'Point',
+        coordinates: [loc.lng, loc.lat]
+      }
+    }));
   }
 
   return api.put(`/itineraries/${id}`, itineraryData)

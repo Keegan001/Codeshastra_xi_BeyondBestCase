@@ -1,34 +1,57 @@
 import { Link } from 'react-router-dom'
+import HowItWorks from './HowItWorks'
+
+import { Lightbulb, LogIn, PlaneTakeoff } from "lucide-react";
+import balloon from "../../public/balloon.svg"; // Adjust path as needed
+
+import "./HeroSection.css"; // <-- We'll write the float animation here
 
 function Home() {
   return (
     <div>
-      {/* Hero Section */}
-      <section className="py-12 md:py-20">
-        <div className="text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-6">
-            Your Journey, <span className="text-indigo-600">Your Way</span>
+      
+    <section className="bg-gradient-to-br from-white via-blue-50 to-white mt-10 mb-10 flex items-center justify-center px-6 md:px-10">
+      <div className="max-w-7xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-16">
+        {/* Left Column */}
+        <div className="w-full md:w-1/2 text-center md:text-left">
+          <h1 className="text-5xl md:text-7xl font-extrabold leading-tight text-gray-900 mb-6">
+            Your Journey,<br />
+            <span className="text-indigo-600">Your Way</span>
           </h1>
-          <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-            Create personalized travel itineraries, collaborate with friends, and
-            explore new destinations with ease.
+          <p className="text-lg md:text-xl text-gray-700 mb-10 max-w-xl mx-auto md:mx-0">
+            Plan personalized travel experiences, collaborate with friends, and
+            explore new places—exactly the way you want.
           </p>
-          <div className="flex flex-col md:flex-row justify-center gap-4">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10 md:justify-start">
             <Link
               to="/register"
-              className="bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700"
+              className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-md hover:bg-indigo-700 transition"
             >
               Get Started
             </Link>
             <Link
               to="/about"
-              className="bg-white text-indigo-600 border border-indigo-600 px-6 py-3 rounded-lg font-medium hover:bg-gray-50"
+              className="bg-white text-indigo-600 border border-indigo-600 px-8 py-3 rounded-xl font-semibold text-lg shadow-md hover:bg-gray-100 transition"
             >
               Learn More
             </Link>
           </div>
         </div>
-      </section>
+
+        {/* Right Column: Animated Balloon */}
+        <div className="w-full md:w-1/2 flex justify-center">
+          <img
+            src={balloon}
+            alt="Balloon"
+            className="w-80 md:w-80 floating-balloon balloon-tint"
+          />
+        </div>
+      </div>
+    </section>
+
+
+
+      <HowItWorks />
 
       {/* Features Section */}
       <section className="py-12 bg-gray-50">
