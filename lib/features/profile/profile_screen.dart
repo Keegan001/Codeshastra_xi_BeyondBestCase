@@ -5,6 +5,7 @@ import 'package:safar/models/itinerary.dart';
 import 'package:safar/widgets/custom_button.dart';
 import 'package:safar/widgets/custom_card.dart';
 import 'package:provider/provider.dart';
+import 'package:safar/features/auth/auth_provider.dart';
 import 'package:safar/features/settings/theme_provider.dart';
 import 'package:safar/features/settings/settings_screen.dart';
 
@@ -16,16 +17,16 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  // Dummy user for phase 1
-  final User _user = User.dummy();
-  final List<Itinerary> _userItineraries = Itinerary.dummyList();
-  
   // Settings
   bool _darkModeEnabled = false;
   bool _notificationsEnabled = true;
   
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    final User user = authProvider.currentUser ?? User.dummy();
+    final userItineraries = Itinerary.dummyList();
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       body: SafeArea(
@@ -34,13 +35,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Profile Header
-              _buildProfileHeader(),
+              _buildProfileHeader(user),
               
               // Stats
-              _buildStatsSection(),
+              _buildStatsSection(userItineraries),
               
               // Recent Itineraries
-              _buildRecentItinerariesSection(),
+              _buildRecentItinerariesSection(userItineraries),
               
               // Settings
               _buildSettingsSection(),
@@ -51,7 +52,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: CustomButton(
                   text: 'Log Out',
                   onPressed: () {
-                    // Log out functionality - will be implemented in phase 2
+                    // Show confirmation dialog
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text('Log Out'),
+                        content: const Text('Are you sure you want to log out?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pop(context); // Close dialog
+                              authProvider.logout(); // Logout user
+                            },
+                            child: const Text('Log Out'),
+                          ),
+                        ],
+                      ),
+                    );
                   },
                   variant: ButtonVariant.outlined,
                   isFullWidth: true,
@@ -80,7 +101,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Profile Header with User Info
-  Widget _buildProfileHeader() {
+  Widget _buildProfileHeader(User user) {
     return Container(
       padding: const EdgeInsets.all(24),
       color: AppTheme.cardColor,
@@ -96,7 +117,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   CircleAvatar(
                     radius: 50,
                     backgroundColor: AppTheme.primaryColor,
-                    backgroundImage: NetworkImage(_user.profileImage ?? ''),
+                    backgroundImage: NetworkImage(user.profileImage ?? ''),
+                    child: user.profileImage == null 
+                        ? Text(
+                            user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                            style: const TextStyle(
+                              fontSize: 32,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          )
+                        : null,
                   ),
                   
                   // Edit Button
@@ -129,14 +160,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           
           // User Name
           Text(
-            _user.name,
+            user.name,
             style: AppTheme.headingMedium,
           ),
           const SizedBox(height: 4),
           
           // Email
           Text(
-            _user.email,
+            user.email,
             style: AppTheme.bodyMedium.copyWith(
               color: AppTheme.textSecondaryColor,
             ),
@@ -159,7 +190,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Stats Section with Itinerary Counts
-  Widget _buildStatsSection() {
+  Widget _buildStatsSection(List<Itinerary> userItineraries) {
     return Padding(
       padding: const EdgeInsets.all(16),
       child: CustomCard(
@@ -167,7 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildStatItem(
-              count: _userItineraries.length.toString(),
+              count: userItineraries.length.toString(),
               label: 'Itineraries',
               icon: Icons.map,
             ),
@@ -233,7 +264,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   // Recent Itineraries Section
-  Widget _buildRecentItinerariesSection() {
+  Widget _buildRecentItinerariesSection(List<Itinerary> userItineraries) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -249,16 +280,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
           const SizedBox(height: 16),
           
-          if (_userItineraries.isEmpty)
+          if (userItineraries.isEmpty)
             _buildEmptyState()
           else
             ...List.generate(
-              _userItineraries.length > 2 ? 2 : _userItineraries.length,
-              (index) => _buildItineraryItem(_userItineraries[index]),
+              userItineraries.length > 2 ? 2 : userItineraries.length,
+              (index) => _buildItineraryItem(userItineraries[index]),
             ),
           
           const SizedBox(height: 16),
-          if (_userItineraries.isNotEmpty)
+          if (userItineraries.isNotEmpty)
             CustomButton(
               text: 'View All',
               onPressed: () {

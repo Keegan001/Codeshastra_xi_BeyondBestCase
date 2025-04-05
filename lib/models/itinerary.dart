@@ -153,17 +153,45 @@ class Budget {
   factory Budget.fromJson(Map<String, dynamic> json) {
     Map<String, double>? categoriesMap;
     
-    if (json['categories'] != null) {
+    if (json['categories'] != null && json['categories'] is Map) {
       categoriesMap = {};
-      json['categories'].forEach((key, value) {
-        categoriesMap![key] = (value as num).toDouble();
+      (json['categories'] as Map).forEach((key, value) {
+        if (value != null) {
+          double doubleValue = 0.0;
+          if (value is num) {
+            doubleValue = value.toDouble();
+          } else if (value is String) {
+            doubleValue = double.tryParse(value) ?? 0.0;
+          }
+          categoriesMap![key.toString()] = doubleValue;
+        }
       });
     }
 
+    // Parse total field
+    double totalValue = 0.0;
+    if (json['total'] != null) {
+      if (json['total'] is num) {
+        totalValue = (json['total'] as num).toDouble();
+      } else if (json['total'] is String) {
+        totalValue = double.tryParse(json['total']) ?? 0.0;
+      }
+    }
+
+    // Parse spent field
+    double spentValue = 0.0;
+    if (json['spent'] != null) {
+      if (json['spent'] is num) {
+        spentValue = (json['spent'] as num).toDouble();
+      } else if (json['spent'] is String) {
+        spentValue = double.tryParse(json['spent']) ?? 0.0;
+      }
+    }
+
     return Budget(
-      currency: json['currency'] ?? 'USD',
-      total: (json['total'] as num?)?.toDouble() ?? 0.0,
-      spent: (json['spent'] as num?)?.toDouble() ?? 0.0,
+      currency: json['currency']?.toString() ?? 'USD',
+      total: totalValue,
+      spent: spentValue,
       categories: categoriesMap,
     );
   }
@@ -188,9 +216,21 @@ class Transportation {
   });
 
   factory Transportation.fromJson(Map<String, dynamic> json) {
+    // Handle mode field - could be missing or of wrong type
+    String transportMode = 'mixed';
+    if (json['mode'] != null) {
+      transportMode = json['mode'].toString();
+    }
+
+    // Handle details field - ensure it's a map
+    Map<String, dynamic>? transportDetails;
+    if (json['details'] != null && json['details'] is Map) {
+      transportDetails = Map<String, dynamic>.from(json['details']);
+    }
+
     return Transportation(
-      mode: json['mode'] ?? 'mixed',
-      details: json['details'],
+      mode: transportMode,
+      details: transportDetails,
     );
   }
 
@@ -234,6 +274,10 @@ class Itinerary {
   final String? description;
   final Budget? budget;
   final Transportation? transportation;
+  final Map<String, dynamic>? additionalSuggestions;
+  final User? owner;
+  final List<Collaborator>? collaborators;
+  final List<JoinRequest>? joinRequests;
 
   Itinerary({
     required this.id,
@@ -253,6 +297,10 @@ class Itinerary {
     this.description,
     this.budget,
     this.transportation,
+    this.additionalSuggestions,
+    this.owner,
+    this.collaborators,
+    this.joinRequests,
   });
 
   // Get the number of days
@@ -286,6 +334,327 @@ class Itinerary {
     }
   }
 
+  // Factory constructor to parse the API response format
+  factory Itinerary.fromJson(Map<String, dynamic> json) {
+    try {
+      String id = json['_id'] ?? json['id'] ?? '';
+      String title = json['title'] ?? 'Untitled Itinerary';
+      
+      // Parse destination
+      String destination = '';
+      if (json['destination'] != null) {
+        if (json['destination'] is Map) {
+          destination = json['destination']['name'] ?? '';
+        } else {
+          destination = json['destination'].toString();
+        }
+      }
+      
+      // Parse date range
+      DateTimeRange dateRange;
+      if (json['dateRange'] != null) {
+        DateTime start = DateTime.now();
+        DateTime end = DateTime.now().add(const Duration(days: 7));
+        
+        if (json['dateRange'] is Map) {
+          if (json['dateRange']['start'] != null) {
+            try {
+              start = DateTime.parse(json['dateRange']['start'].toString());
+            } catch (e) {
+              // Keep default if parsing fails
+            }
+          }
+          if (json['dateRange']['end'] != null) {
+            try {
+              end = DateTime.parse(json['dateRange']['end'].toString());
+            } catch (e) {
+              // Keep default if parsing fails
+            }
+          }
+        }
+        dateRange = DateTimeRange(start: start, end: end);
+      } else {
+        dateRange = DateTimeRange(
+          start: DateTime.now(),
+          end: DateTime.now().add(const Duration(days: 7)),
+        );
+      }
+      
+      // Parse budget tier (default to standard)
+      BudgetTier budgetTier = BudgetTier.standard;
+      if (json['budget'] != null) {
+        try {
+          if (json['budget'] is Map && json['budget']['total'] != null) {
+            final totalVal = json['budget']['total'];
+            final total = totalVal is num ? totalVal.toDouble() : 
+                          totalVal is String ? double.tryParse(totalVal) ?? 500.0 : 500.0;
+                          
+            if (total < 200) {
+              budgetTier = BudgetTier.cheap;
+            } else if (total < 500) {
+              budgetTier = BudgetTier.budget;
+            } else if (total < 1000) {
+              budgetTier = BudgetTier.standard;
+            } else {
+              budgetTier = BudgetTier.luxury;
+            }
+          }
+        } catch (e) {
+          // Use default if there's any error
+        }
+      }
+      
+      // Parse transport mode
+      String transportationMode = 'mixed';
+      if (json['transportation'] != null) {
+        if (json['transportation'] is Map && json['transportation']['mode'] != null) {
+          transportationMode = json['transportation']['mode'].toString();
+        } else if (json['transportation'] is String) {
+          transportationMode = json['transportation'];
+        }
+      }
+      
+      // Parse is private
+      bool isPrivate = json['isPrivate'] == true; // Ensure it's a boolean
+      
+      // Parse days (assuming day IDs for now, to be loaded separately)
+      List<Day> days = [];
+      if (json['days'] != null) {
+        if (json['days'] is List) {
+          days = (json['days'] as List).map((dayData) {
+            if (dayData is Map<String, dynamic>) {
+              try {
+                // Use Day.fromJson if available, but handle errors gracefully
+                final String dayId = dayData['_id']?.toString() ?? dayData['id']?.toString() ?? '';
+                DateTime dayDate;
+                try {
+                  dayDate = dayData['date'] != null 
+                      ? DateTime.parse(dayData['date'].toString()) 
+                      : DateTime.now().add(Duration(days: days.length));
+                } catch (e) {
+                  dayDate = DateTime.now().add(Duration(days: days.length));
+                }
+                
+                return Day(
+                  id: dayId,
+                  date: dayDate,
+                  title: dayData['title']?.toString() ?? 'Day ${days.length + 1}',
+                  notes: dayData['notes']?.toString() ?? '',
+                  activities: [], // We'll load activities separately if needed
+                );
+              } catch (e) {
+                // If parsing fails, create a placeholder
+                return Day(
+                  id: dayData['_id']?.toString() ?? '',
+                  date: DateTime.now().add(Duration(days: days.length)),
+                  title: 'Day ${days.length + 1}',
+                  activities: [],
+                  notes: '',
+                );
+              }
+            } else {
+              // If it's just an ID
+              return Day(
+                id: dayData.toString(),
+                date: DateTime.now(),
+                title: 'Day ${days.length + 1}',
+                activities: [],
+                notes: '',
+              );
+            }
+          }).toList();
+        }
+      }
+      
+      // Default to solo package type
+      PackageType packageType = PackageType.solo;
+      
+      // Use a default cover image if none provided
+      String coverImage = json['coverImage'] ?? 
+          'https://images.unsplash.com/photo-1500835556837-99ac94a94552';
+      
+      // Parse notes
+      String notes = json['notes']?.toString() ?? '';
+      
+      // Parse timestamps
+      DateTime createdAt;
+      try {
+        createdAt = json['createdAt'] != null 
+            ? DateTime.parse(json['createdAt'].toString()) 
+            : DateTime.now();
+      } catch (e) {
+        createdAt = DateTime.now();
+      }
+      
+      DateTime updatedAt;
+      try {
+        updatedAt = json['updatedAt'] != null 
+            ? DateTime.parse(json['updatedAt'].toString()) 
+            : DateTime.now();
+      } catch (e) {
+        updatedAt = DateTime.now();
+      }
+      
+      // Parse description
+      String? description = json['description']?.toString();
+      
+      // Parse budget
+      Budget? budget;
+      if (json['budget'] != null && json['budget'] is Map) {
+        try {
+          budget = Budget.fromJson(json['budget'] as Map<String, dynamic>);
+        } catch (e) {
+          // Leave as null if parsing fails
+        }
+      }
+      
+      // Parse transportation
+      Transportation? transportation;
+      if (json['transportation'] != null && json['transportation'] is Map) {
+        try {
+          transportation = Transportation.fromJson(json['transportation'] as Map<String, dynamic>);
+        } catch (e) {
+          // Leave as null if parsing fails
+        }
+      }
+      
+      // Parse additional suggestions
+      Map<String, dynamic>? additionalSuggestions;
+      if (json['additionalSuggestions'] != null && json['additionalSuggestions'] is Map) {
+        additionalSuggestions = json['additionalSuggestions'] as Map<String, dynamic>;
+      }
+      
+      // Parse owner
+      User? owner;
+      if (json['owner'] != null) {
+        try {
+          if (json['owner'] is Map) {
+            owner = User.fromJson(json['owner'] as Map<String, dynamic>);
+          } else if (json['owner'] is String) {
+            // Owner might just be an ID
+            owner = User(
+              id: json['owner'].toString(),
+              name: 'User',
+              email: '',
+              role: 'user',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            );
+          }
+        } catch (e) {
+          // Leave as null if parsing fails
+        }
+      }
+      
+      // Parse collaborators
+      List<Collaborator>? collaborators;
+      if (json['collaborators'] != null && json['collaborators'] is List) {
+        try {
+          collaborators = (json['collaborators'] as List)
+              .map((c) => c is Map<String, dynamic> 
+                  ? Collaborator.fromJson(c) 
+                  : Collaborator(
+                      user: User(
+                        id: '', 
+                        name: 'Unknown', 
+                        email: '',
+                        role: 'user',
+                        createdAt: DateTime.now(),
+                        updatedAt: DateTime.now(),
+                      ),
+                      role: 'viewer'
+                    ))
+              .toList();
+        } catch (e) {
+          // Leave as null if parsing fails
+        }
+      }
+      
+      // Parse join requests
+      List<JoinRequest>? joinRequests;
+      if (json['joinRequests'] != null && json['joinRequests'] is List) {
+        try {
+          joinRequests = (json['joinRequests'] as List)
+              .map((jr) => jr is Map<String, dynamic> 
+                  ? JoinRequest.fromJson(jr)
+                  : JoinRequest(
+                      user: User(
+                        id: '', 
+                        name: 'Unknown', 
+                        email: '',
+                        role: 'user',
+                        createdAt: DateTime.now(),
+                        updatedAt: DateTime.now(),
+                      ),
+                      status: 'pending',
+                      requestedAt: DateTime.now()
+                    ))
+              .toList();
+        } catch (e) {
+          // Leave as null if parsing fails
+        }
+      }
+      
+      // Parse scrapbook entries
+      List<ScrapbookEntry> scrapbookEntries = [];
+      if (json['scrapbookEntries'] != null && json['scrapbookEntries'] is List) {
+        try {
+          scrapbookEntries = (json['scrapbookEntries'] as List)
+              .where((entry) => entry is Map<String, dynamic>)
+              .map((entry) => ScrapbookEntry.fromJson(entry as Map<String, dynamic>))
+              .toList();
+        } catch (e) {
+          // Use empty list if parsing fails
+        }
+      }
+      
+      return Itinerary(
+        id: id,
+        title: title,
+        destination: destination,
+        dateRange: dateRange,
+        budgetTier: budgetTier,
+        transportationMode: transportationMode,
+        isPrivate: isPrivate,
+        days: days,
+        scrapbookEntries: scrapbookEntries,
+        packageType: packageType,
+        coverImage: coverImage,
+        notes: notes,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        description: description,
+        budget: budget,
+        transportation: transportation,
+        additionalSuggestions: additionalSuggestions,
+        owner: owner,
+        collaborators: collaborators,
+        joinRequests: joinRequests,
+      );
+    } catch (e) {
+      print('Error in Itinerary.fromJson: $e');
+      // Return a default itinerary to avoid crashing
+      return Itinerary(
+        id: '',
+        title: 'Error Loading',
+        destination: 'Unknown',
+        dateRange: DateTimeRange(
+          start: DateTime.now(),
+          end: DateTime.now().add(const Duration(days: 7)),
+        ),
+        budgetTier: BudgetTier.standard,
+        transportationMode: 'mixed',
+        isPrivate: true,
+        days: [],
+        packageType: PackageType.solo,
+        coverImage: 'https://images.unsplash.com/photo-1500835556837-99ac94a94552',
+        notes: '',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      );
+    }
+  }
+
   // Copy with method for updating
   Itinerary copyWith({
     String? id,
@@ -305,6 +674,10 @@ class Itinerary {
     String? description,
     Budget? budget,
     Transportation? transportation,
+    Map<String, dynamic>? additionalSuggestions,
+    User? owner,
+    List<Collaborator>? collaborators,
+    List<JoinRequest>? joinRequests,
   }) {
     return Itinerary(
       id: id ?? this.id,
@@ -321,9 +694,13 @@ class Itinerary {
       notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
-      description: description,
-      budget: budget,
-      transportation: transportation,
+      description: description ?? this.description,
+      budget: budget ?? this.budget,
+      transportation: transportation ?? this.transportation,
+      additionalSuggestions: additionalSuggestions ?? this.additionalSuggestions,
+      owner: owner ?? this.owner,
+      collaborators: collaborators ?? this.collaborators,
+      joinRequests: joinRequests ?? this.joinRequests,
     );
   }
 

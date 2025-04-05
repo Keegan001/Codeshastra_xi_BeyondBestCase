@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:safar/core/theme.dart';
 import 'package:safar/core/constants.dart';
 import 'package:safar/models/itinerary.dart';
+import 'package:safar/services/api_service.dart';
 import 'package:safar/widgets/custom_button.dart';
 import 'package:safar/widgets/itinerary_card.dart';
+import 'package:safar/features/itineraries/itinerary_detail_screen.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -15,12 +17,56 @@ class ExploreScreen extends StatefulWidget {
 class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _searchController = TextEditingController();
-  final List<Itinerary> _dummyItineraries = Itinerary.dummyList();
+  final ApiService _apiService = ApiService();
+  
+  // State variables for public itineraries
+  List<Itinerary> _publicItineraries = [];
+  bool _isLoading = true;
+  String? _error;
   
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _fetchPublicItineraries();
+  }
+  
+  Future<void> _fetchPublicItineraries() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+    
+    try {
+      // Check if user is logged in
+      final isLoggedIn = await _apiService.isLoggedIn();
+      
+      if (!isLoggedIn) {
+        setState(() {
+          _isLoading = false;
+          _error = 'You need to login to see public itineraries';
+          _publicItineraries = Itinerary.dummyList(); // Show dummy data if not logged in
+        });
+        return;
+      }
+      
+      // Fetch public itineraries
+      final itineraries = await _apiService.getPublicItineraries(
+        search: _searchController.text.isNotEmpty ? _searchController.text : null,
+      );
+      
+      setState(() {
+        _publicItineraries = itineraries;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching public itineraries: $e');
+      setState(() {
+        _isLoading = false;
+        _error = e.toString();
+        _publicItineraries = Itinerary.dummyList(); // Show dummy data on error
+      });
+    }
   }
   
   @override
@@ -99,7 +145,7 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
               ),
             ),
             onSubmitted: (value) {
-              // Search functionality will be implemented in phase 2
+              _fetchPublicItineraries();
             },
           ),
         ],
@@ -142,34 +188,100 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
 
   // Popular Tab Content
   Widget _buildPopularTab() {
-    // Filter the dummy itineraries to only show public ones
-    final publicItineraries = _dummyItineraries
-        .where((itinerary) => !itinerary.isPrivate)
-        .toList();
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
     
-    return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      children: [
-        // Featured Itinerary
-        _buildFeaturedItinerary(publicItineraries.first),
-        const SizedBox(height: 24),
-        
-        // Trending Itineraries
-        Text(
-          'Trending Now',
-          style: AppTheme.headingSmall,
-        ),
-        const SizedBox(height: 16),
-        ...publicItineraries.skip(1).map((itinerary) => 
-          ItineraryCard(
-            itinerary: itinerary,
-            isDetailed: true,
-            onTap: () {
-              // Navigate to itinerary details
-            },
+    if (_error != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Error loading itineraries',
+                style: AppTheme.headingSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _error!,
+                style: AppTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              CustomButton(
+                text: 'Try Again',
+                onPressed: _fetchPublicItineraries,
+              ),
+            ],
           ),
         ),
-      ],
+      );
+    }
+    
+    if (_publicItineraries.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'No Public Itineraries Found',
+                style: AppTheme.headingSmall,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'There are no public itineraries available at the moment.',
+                style: AppTheme.bodyMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              CustomButton(
+                text: 'Refresh',
+                onPressed: _fetchPublicItineraries,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
+    return RefreshIndicator(
+      onRefresh: _fetchPublicItineraries,
+      child: ListView(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        children: [
+          // Featured Itinerary (first in the list)
+          if (_publicItineraries.isNotEmpty)
+            _buildFeaturedItinerary(_publicItineraries.first),
+          const SizedBox(height: 24),
+          
+          // Trending Itineraries (rest of the list)
+          Text(
+            'Trending Now',
+            style: AppTheme.headingSmall,
+          ),
+          const SizedBox(height: 16),
+          ..._publicItineraries.skip(1).map((itinerary) => 
+            ItineraryCard(
+              itinerary: itinerary,
+              isDetailed: true,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ItineraryDetailScreen(itinerary: itinerary),
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -395,7 +507,12 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
             CustomButton(
               text: 'View Itinerary',
               onPressed: () {
-                // Navigate to itinerary details
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ItineraryDetailScreen(itinerary: itinerary),
+                  ),
+                );
               },
               variant: ButtonVariant.primary,
               isFullWidth: true,
