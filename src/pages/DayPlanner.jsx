@@ -5,12 +5,13 @@ import { getItineraryById } from '../services/itinerary'
 import { searchPlaces } from '../services/place'
 import axios from 'axios'
 import DayComments from '../components/DayComments'
+import ItineraryMap from '../components/ItineraryMap'
 
 function DayPlanner() {
   const { id, dayId } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated } = useSelector(state => state.auth)
-  
+  const [locations, setLocations] = useState([])
   const [itinerary, setItinerary] = useState(null)
   const [day, setDay] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -1149,7 +1150,10 @@ function DayPlanner() {
           )}
         </div>
       </div>
-      
+      <ItineraryMap 
+            locations={locations} 
+            setLocations={setLocations} 
+          />
       {/* Day Comments component with improved error handling */}
       {day && (
         <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
