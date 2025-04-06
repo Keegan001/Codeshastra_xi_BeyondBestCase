@@ -54,7 +54,13 @@ class _HomeScreenState extends State<HomeScreen> {
               
               // Travel Tips
               const SizedBox(height: 32),
-              _buildSectionHeader('Travel Tips', 'More'),
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  'Travel Tips',  
+                  style: AppTheme.headingSmall,
+                ),
+              ),
               const SizedBox(height: 16),
               _buildTravelTips(),
               
@@ -78,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Hello, John',
+                'Hello, Devraj',
                 style: AppTheme.headingMedium,
               ),
               Text(

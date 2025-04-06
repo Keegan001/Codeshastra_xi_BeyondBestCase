@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:safar/core/constants.dart';
@@ -116,8 +117,12 @@ class ScrapbookService {
         mediaPath = await _saveMediaFile(newMediaFile, updatedEntry.id);
       }
       
-      // Create updated entry with new media path
-      final finalUpdatedEntry = ScrapbookEntry(
+      // Get existing entry to preserve properties that might not be set in updatedEntry
+      final existingEntryJson = entriesList[entryIndex];
+      final existingEntry = ScrapbookEntry.fromJson(existingEntryJson);
+      
+      // Create updated entry with new media path, preserving existing properties if not explicitly updated
+      final finalUpdatedEntry = existingEntry.copyWith(
         id: updatedEntry.id,
         title: updatedEntry.title,
         content: updatedEntry.content,
@@ -125,7 +130,11 @@ class ScrapbookService {
         timestamp: updatedEntry.timestamp,
         latitude: updatedEntry.latitude,
         longitude: updatedEntry.longitude,
-        mediaUrl: mediaPath,
+        mediaUrl: mediaPath ?? updatedEntry.mediaUrl,
+        backgroundStyle: updatedEntry.backgroundStyle,
+        layoutStyle: updatedEntry.layoutStyle,
+        zoomLevel: updatedEntry.zoomLevel,
+        backgroundColor: updatedEntry.backgroundColor,
       );
       
       // Update the entry in the list
@@ -133,7 +142,10 @@ class ScrapbookService {
       
       // Save back to storage
       allEntriesMap[itineraryId] = entriesList;
-      await _storageService.setObject(StorageKeys.scrapbookEntries, allEntriesMap);
+      await _storageService.setString(
+        StorageKeys.scrapbookEntries, 
+        jsonEncode(allEntriesMap)
+      );
       
       return true;
     } catch (e) {
@@ -167,12 +179,28 @@ class ScrapbookService {
         }
       }
       
+      // Delete multiple media files for collages
+      if (entryToDelete['mediaUrls'] != null) {
+        final mediaUrls = List<String>.from(entryToDelete['mediaUrls']);
+        for (final url in mediaUrls) {
+          if (url.startsWith('file://')) {
+            final mediaFile = File(url.replaceFirst('file://', ''));
+            if (await mediaFile.exists()) {
+              await mediaFile.delete();
+            }
+          }
+        }
+      }
+      
       // Remove entry from list
       entriesList.removeWhere((json) => json['id'] == entryId);
       
       // Save back to storage
       allEntriesMap[itineraryId] = entriesList;
-      await _storageService.setObject(StorageKeys.scrapbookEntries, allEntriesMap);
+      await _storageService.setString(
+        StorageKeys.scrapbookEntries, 
+        jsonEncode(allEntriesMap)
+      );
       
       return true;
     } catch (e) {
@@ -214,6 +242,109 @@ class ScrapbookService {
     // In a real app, this would use an audio recording package
     // For now, we'll return null
     return null;
+  }
+  
+  // Pick multiple images from gallery
+  Future<List<XFile>> pickMultipleImages() async {
+    try {
+      return await _imagePicker.pickMultiImage(
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 90,
+      );
+    } catch (e) {
+      print('Error picking multiple images: $e');
+      return [];
+    }
+  }
+  
+  // Add a new collage entry
+  Future<ScrapbookEntry?> addCollageEntry({
+    required String itineraryId,
+    required String title,
+    required String content,
+    required DateTime timestamp,
+    required List<XFile> mediaFiles,
+    required CollageLayout collageLayout,
+    double? latitude,
+    double? longitude,
+    BackgroundStyle backgroundStyle = BackgroundStyle.none,
+    Color? backgroundColor,
+  }) async {
+    try {
+      // Generate a unique ID for the entry
+      final entryId = uuid.v4();
+      
+      // Save all media files locally
+      final List<String> mediaPaths = await _saveMultipleMediaFiles(mediaFiles, entryId);
+      
+      if (mediaPaths.isEmpty) {
+        return null;
+      }
+      
+      // Create the scrapbook entry
+      final entry = ScrapbookEntry(
+        id: entryId,
+        title: title,
+        content: content,
+        type: ScrapbookEntryType.collage,
+        timestamp: timestamp,
+        latitude: latitude,
+        longitude: longitude,
+        mediaUrls: mediaPaths,
+        backgroundStyle: backgroundStyle,
+        layoutStyle: LayoutStyle.collage,
+        backgroundColor: backgroundColor,
+        collageLayout: collageLayout,
+      );
+      
+      // Save to local storage
+      await _saveEntryToStorage(itineraryId, entry);
+      
+      return entry;
+    } catch (e) {
+      print('Error adding collage entry: $e');
+      return null;
+    }
+  }
+  
+  // Save multiple media files locally and return the paths
+  Future<List<String>> _saveMultipleMediaFiles(List<XFile> files, String entryId) async {
+    try {
+      // Get application documents directory
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      final String appDocPath = appDocDir.path;
+      
+      // Create a directory for scrapbook media if it doesn't exist
+      final Directory scrapbookDir = Directory('$appDocPath/scrapbook');
+      if (!await scrapbookDir.exists()) {
+        await scrapbookDir.create(recursive: true);
+      }
+      
+      final List<String> mediaPaths = [];
+      
+      // Save each file
+      for (int i = 0; i < files.length; i++) {
+        final file = files[i];
+        
+        // Generate a unique filename
+        final extension = path.extension(file.path);
+        final fileName = '${entryId}_${i+1}$extension';
+        final localFilePath = '${scrapbookDir.path}/$fileName';
+        
+        // Copy the file to the local path
+        final File newFile = File(localFilePath);
+        await newFile.writeAsBytes(await file.readAsBytes());
+        
+        // Add the file URL to the list
+        mediaPaths.add('file://$localFilePath');
+      }
+      
+      return mediaPaths;
+    } catch (e) {
+      print('Error saving media files: $e');
+      return [];
+    }
   }
   
   // Private helper methods

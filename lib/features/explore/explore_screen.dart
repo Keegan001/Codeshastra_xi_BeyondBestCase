@@ -6,6 +6,8 @@ import 'package:safar/services/api_service.dart';
 import 'package:safar/widgets/custom_button.dart';
 import 'package:safar/widgets/itinerary_card.dart';
 import 'package:safar/features/itineraries/itinerary_detail_screen.dart';
+import 'package:safar/features/influencers/influencer_itineraries_screen.dart';
+import 'package:lottie/lottie.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -199,21 +201,29 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: Colors.amber,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
               Text(
-                'Error loading itineraries',
-                style: AppTheme.headingSmall,
+                'Error',
+                style: AppTheme.headingMedium,
               ),
               const SizedBox(height: 8),
               Text(
                 _error!,
-                style: AppTheme.bodyMedium,
                 textAlign: TextAlign.center,
+                style: AppTheme.bodyMedium.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                ),
               ),
               const SizedBox(height: 16),
               CustomButton(
-                text: 'Try Again',
+                text: 'Retry',
                 onPressed: _fetchPublicItineraries,
               ),
             ],
@@ -222,66 +232,206 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
       );
     }
     
-    if (_publicItineraries.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'No Public Itineraries Found',
-                style: AppTheme.headingSmall,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'There are no public itineraries available at the moment.',
-                style: AppTheme.bodyMedium,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 16),
-              CustomButton(
-                text: 'Refresh',
-                onPressed: _fetchPublicItineraries,
-              ),
-            ],
-          ),
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        // Influencer Itineraries Section
+        _buildInfluencerItinerariesSection(),
+        
+        const SizedBox(height: 32),
+        
+        // Popular Itineraries
+        Text(
+          'Popular Itineraries',
+          style: AppTheme.headingMedium,
         ),
-      );
-    }
-    
-    return RefreshIndicator(
-      onRefresh: _fetchPublicItineraries,
-      child: ListView(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        children: [
-          // Featured Itinerary (first in the list)
-          if (_publicItineraries.isNotEmpty)
-            _buildFeaturedItinerary(_publicItineraries.first),
-          const SizedBox(height: 24),
-          
-          // Trending Itineraries (rest of the list)
-          Text(
-            'Trending Now',
-            style: AppTheme.headingSmall,
-          ),
-          const SizedBox(height: 16),
-          ..._publicItineraries.skip(1).map((itinerary) => 
-            ItineraryCard(
-              itinerary: itinerary,
-              isDetailed: true,
-              onTap: () {
+        const SizedBox(height: 16),
+        _buildItineraryList(),
+      ],
+    );
+  }
+  
+  // New section for influencer itineraries
+  Widget _buildInfluencerItinerariesSection() {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Influencer Itineraries',
+              style: AppTheme.headingMedium,
+            ),
+            TextButton(
+              onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ItineraryDetailScreen(itinerary: itinerary),
+                    builder: (context) => const InfluencerItinerariesScreen(),
                   ),
                 );
               },
+              child: const Text('View All'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          height: 180,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [AppTheme.primaryColor.withOpacity(0.8), AppTheme.primaryColor],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.primaryColor.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: InkWell(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const InfluencerItinerariesScreen(),
+                ),
+              );
+            },
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              children: [
+                // Animation overlay
+                Positioned(
+                  right: -20,
+                  bottom: -20,
+                  child: Opacity(
+                    opacity: 0.2,
+                    child: Lottie.network(
+                      'https://assets3.lottiefiles.com/packages/lf20_jR229r.json',
+                      width: 150,
+                      height: 150,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                
+                // Content
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.star,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                  SizedBox(width: 3),
+                                  Text(
+                                    'NEW',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 10,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            const Text(
+                              'Travel Like a Pro',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            const Text(
+                              'Explore influencer itineraries',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                              ),
+                              maxLines: 1,
+                            ),
+                            const SizedBox(height: 5),
+                            ElevatedButton.icon(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const InfluencerItinerariesScreen(),
+                                  ),
+                                );
+                              },
+                              icon: const Icon(Icons.explore, size: 10),
+                              label: const Text('Explore Now'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: AppTheme.primaryColor,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                minimumSize: const Size(100, 30),
+                                textStyle: const TextStyle(
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Decorative element
+                      Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.travel_explore,
+                          color: Colors.white,
+                          size: 25,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -760,5 +910,59 @@ class _ExploreScreenState extends State<ExploreScreen> with SingleTickerProvider
     } else {
       return 'https://images.unsplash.com/photo-1500835556837-99ac94a94552?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=600&q=80';
     }
+  }
+
+  Widget _buildItineraryList() {
+    if (_publicItineraries.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.travel_explore,
+              size: 64,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No itineraries found',
+              style: AppTheme.headingSmall,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Try different search terms or check back later',
+              textAlign: TextAlign.center,
+              style: AppTheme.bodyMedium.copyWith(
+                color: AppTheme.textSecondaryColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _publicItineraries.length,
+      itemBuilder: (context, index) {
+        final itinerary = _publicItineraries[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: ItineraryCard(
+            itinerary: itinerary,
+            isDetailed: true,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ItineraryDetailScreen(itinerary: itinerary),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
   }
 } 

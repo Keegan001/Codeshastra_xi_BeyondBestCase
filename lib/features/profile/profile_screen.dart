@@ -22,6 +22,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _notificationsEnabled = true;
   
   @override
+  void initState() {
+    super.initState();
+    // Load dark mode setting from provider
+    Future.delayed(Duration.zero, () {
+      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      setState(() {
+        _darkModeEnabled = themeProvider.isDarkMode;
+      });
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final User user = authProvider.currentUser ?? User.dummy();
@@ -500,7 +512,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     setState(() {
                       _darkModeEnabled = value;
                       // Update theme
-                      Provider.of<ThemeProvider>(context, listen: false).setDarkMode(value);
+                      final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+                      themeProvider.setThemeMode(value ? AppThemeMode.dark : AppThemeMode.light);
                     });
                   },
                 ),

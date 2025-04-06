@@ -9,7 +9,9 @@ import 'package:safar/features/explore/explore_screen.dart';
 import 'package:safar/features/itineraries/itineraries_screen.dart';
 import 'package:safar/features/profile/profile_screen.dart';
 import 'package:safar/features/settings/theme_provider.dart';
+import 'package:safar/features/influencers/influencer_itineraries_screen.dart';
 import 'package:safar/widgets/custom_nav_bar.dart';
+import 'package:safar/widgets/sos_button.dart';
 import 'package:safar/services/storage_service.dart';
 
 void main() async {
@@ -129,6 +131,11 @@ class _MainScreenState extends State<MainScreen> {
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
       ),
+      floatingActionButton: const Padding(
+        padding: EdgeInsets.only(bottom: 16.0, right: 8.0),
+        child: SOSButton(),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }

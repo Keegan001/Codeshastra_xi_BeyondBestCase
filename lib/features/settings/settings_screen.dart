@@ -14,7 +14,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _isDarkMode = false;
+  AppThemeMode _selectedThemeMode = AppThemeMode.system;
   bool _notificationsEnabled = true;
   bool _locationEnabled = true;
   String _selectedLanguage = 'English';
@@ -38,7 +38,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Future.delayed(Duration.zero, () {
       final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
       setState(() {
-        _isDarkMode = themeProvider.isDarkMode;
+        _selectedThemeMode = themeProvider.themeMode;
       });
     });
   }
@@ -86,18 +86,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildSection(
             title: 'Appearance',
             children: [
-              _buildSwitchTile(
-                title: 'Dark Mode',
-                subtitle: 'Use dark theme for the app',
-                value: _isDarkMode,
-                onChanged: (value) {
-                  setState(() {
-                    _isDarkMode = value;
-                    themeProvider.toggleTheme();
-                  });
-                },
-                icon: Icons.dark_mode,
-              ),
+              _buildThemeSelector(themeProvider),
               _buildDropdownTile(
                 title: 'Language',
                 value: _selectedLanguage,
@@ -367,6 +356,101 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
         const SizedBox(height: 24),
       ],
+    );
+  }
+
+  Widget _buildThemeSelector(ThemeProvider themeProvider) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Theme',
+              style: AppTheme.labelLarge,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildThemeModeOption(
+                    AppThemeMode.system, 
+                    themeProvider,
+                  ),
+                ),
+                Expanded(
+                  child: _buildThemeModeOption(
+                    AppThemeMode.light,
+                    themeProvider,
+                  ),
+                ),
+                Expanded(
+                  child: _buildThemeModeOption(
+                    AppThemeMode.dark,
+                    themeProvider,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildThemeModeOption(AppThemeMode mode, ThemeProvider themeProvider) {
+    final isSelected = _selectedThemeMode == mode;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedThemeMode = mode;
+        });
+        themeProvider.setThemeMode(mode);
+      },
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: isSelected ? AppTheme.primaryColor.withOpacity(0.2) : null,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected 
+                    ? AppTheme.primaryColor 
+                    : AppTheme.dividerColor,
+                width: isSelected ? 2 : 1,
+              ),
+            ),
+            child: Icon(
+              themeProvider.getThemeModeIcon(mode),
+              color: isSelected 
+                  ? AppTheme.primaryColor
+                  : AppTheme.textSecondaryColor,
+              size: 32,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            themeProvider.getThemeModeName(mode),
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              color: isSelected 
+                  ? AppTheme.primaryColor
+                  : AppTheme.textSecondaryColor,
+            ),
+          ),
+        ],
+      ),
     );
   }
 

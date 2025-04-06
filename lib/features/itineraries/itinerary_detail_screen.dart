@@ -907,6 +907,8 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> with Sing
         return Icons.note;
       case ScrapbookEntryType.audio:
         return Icons.mic;
+      case ScrapbookEntryType.collage:
+        return Icons.collections;
     }
   }
 

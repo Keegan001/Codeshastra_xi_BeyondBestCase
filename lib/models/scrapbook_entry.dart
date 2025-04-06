@@ -4,7 +4,34 @@ enum ScrapbookEntryType {
   photo,
   video,
   note,
-  audio
+  audio,
+  collage
+}
+
+enum BackgroundStyle {
+  none,
+  mapSatellite,
+  mapTerrain,
+  mapStandard,
+  mapHybrid,
+  solid
+}
+
+enum LayoutStyle {
+  standard,
+  polaroid,
+  postcard,
+  journal,
+  collage
+}
+
+enum CollageLayout {
+  grid2x2,
+  grid3x3,
+  vertical,
+  horizontal,
+  featured,
+  freeform
 }
 
 class ScrapbookEntry {
@@ -16,6 +43,12 @@ class ScrapbookEntry {
   final double? latitude;
   final double? longitude;
   final String? mediaUrl;
+  final List<String>? mediaUrls; // Multiple media URLs for collages
+  final BackgroundStyle backgroundStyle;
+  final LayoutStyle layoutStyle;
+  final double? zoomLevel;
+  final Color? backgroundColor;
+  final CollageLayout? collageLayout;
 
   ScrapbookEntry({
     required this.id,
@@ -26,10 +59,22 @@ class ScrapbookEntry {
     this.latitude,
     this.longitude,
     this.mediaUrl,
+    this.mediaUrls,
+    this.backgroundStyle = BackgroundStyle.none,
+    this.layoutStyle = LayoutStyle.standard,
+    this.zoomLevel = 14.0,
+    this.backgroundColor,
+    this.collageLayout,
   });
 
   // Create from JSON
   static ScrapbookEntry fromJson(Map<String, dynamic> json) {
+    // Handle mediaUrls list conversion
+    List<String>? mediaUrlsList;
+    if (json['mediaUrls'] != null) {
+      mediaUrlsList = List<String>.from(json['mediaUrls']);
+    }
+
     return ScrapbookEntry(
       id: json['id'],
       title: json['title'],
@@ -39,6 +84,20 @@ class ScrapbookEntry {
       latitude: json['latitude'],
       longitude: json['longitude'],
       mediaUrl: json['mediaUrl'],
+      mediaUrls: mediaUrlsList,
+      backgroundStyle: json['backgroundStyle'] != null 
+          ? BackgroundStyle.values[json['backgroundStyle']] 
+          : BackgroundStyle.none,
+      layoutStyle: json['layoutStyle'] != null 
+          ? LayoutStyle.values[json['layoutStyle']] 
+          : LayoutStyle.standard,
+      zoomLevel: json['zoomLevel']?.toDouble(),
+      backgroundColor: json['backgroundColor'] != null 
+          ? Color(json['backgroundColor']) 
+          : null,
+      collageLayout: json['collageLayout'] != null
+          ? CollageLayout.values[json['collageLayout']]
+          : null,
     );
   }
 
@@ -53,12 +112,53 @@ class ScrapbookEntry {
       'latitude': latitude,
       'longitude': longitude,
       'mediaUrl': mediaUrl,
+      'mediaUrls': mediaUrls,
+      'backgroundStyle': backgroundStyle.index,
+      'layoutStyle': layoutStyle.index,
+      'zoomLevel': zoomLevel,
+      'backgroundColor': backgroundColor?.value,
+      'collageLayout': collageLayout?.index,
     };
   }
 
   // Create a list of ScrapbookEntry from JSON list
   static List<ScrapbookEntry> fromJsonList(List<dynamic> jsonList) {
     return jsonList.map((json) => ScrapbookEntry.fromJson(json)).toList();
+  }
+
+  // Create a copy with updated fields
+  ScrapbookEntry copyWith({
+    String? id,
+    String? title,
+    String? content,
+    ScrapbookEntryType? type,
+    DateTime? timestamp,
+    double? latitude,
+    double? longitude,
+    String? mediaUrl,
+    List<String>? mediaUrls,
+    BackgroundStyle? backgroundStyle,
+    LayoutStyle? layoutStyle,
+    double? zoomLevel,
+    Color? backgroundColor,
+    CollageLayout? collageLayout,
+  }) {
+    return ScrapbookEntry(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      type: type ?? this.type,
+      timestamp: timestamp ?? this.timestamp,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      mediaUrl: mediaUrl ?? this.mediaUrl,
+      mediaUrls: mediaUrls ?? this.mediaUrls,
+      backgroundStyle: backgroundStyle ?? this.backgroundStyle,
+      layoutStyle: layoutStyle ?? this.layoutStyle,
+      zoomLevel: zoomLevel ?? this.zoomLevel,
+      backgroundColor: backgroundColor ?? this.backgroundColor,
+      collageLayout: collageLayout ?? this.collageLayout,
+    );
   }
 
   // Factory method to create dummy entries for testing

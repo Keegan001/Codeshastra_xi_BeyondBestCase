@@ -16,7 +16,7 @@ void main() {
     await tester.pumpWidget(const SafarApp());
 
     // Verify that the app title is present
-    expect(find.text('Hello, John'), findsOneWidget);
+    expect(find.text('Hello, Devraj'), findsOneWidget);
     
     // Verify that the app has navigation elements
     expect(find.byIcon(Icons.home_rounded), findsOneWidget);

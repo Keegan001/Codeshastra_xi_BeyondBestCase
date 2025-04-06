@@ -5,7 +5,12 @@ import 'package:safar/models/itinerary.dart';
 import 'package:safar/models/scrapbook_entry.dart';
 import 'package:safar/features/itineraries/scrapbook_entry_detail_screen.dart';
 import 'package:safar/features/itineraries/add_scrapbook_entry_screen.dart';
+import 'package:safar/features/itineraries/collage_creator_screen.dart';
 import 'package:safar/services/scrapbook_service.dart';
+import 'package:safar/utils/map_background_utils.dart';
+import 'package:safar/utils/layout_style_utils.dart';
+import 'package:safar/features/settings/theme_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 
 class ScrapbookScreen extends StatefulWidget {
@@ -26,6 +31,7 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
   final ScrapbookService _scrapbookService = ScrapbookService();
   bool _isLoading = true;
   List<ScrapbookEntry> _entries = [];
+  bool _isGridView = false; // Toggle between list and grid view
 
   @override
   void initState() {
@@ -72,6 +78,15 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
         title: Text('${widget.itinerary.title} Scrapbook'),
         actions: [
           IconButton(
+            icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
+            onPressed: () {
+              setState(() {
+                _isGridView = !_isGridView;
+              });
+            },
+            tooltip: _isGridView ? 'List View' : 'Grid View',
+          ),
+          IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadEntries,
             tooltip: 'Refresh',
@@ -88,25 +103,48 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final result = await Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => AddScrapbookEntryScreen(
-                itinerary: widget.itinerary,
-              ),
-            ),
-          );
-          
-          if (result == true) {
-            // Refresh entries if a new one was added
-            _loadEntries();
-          }
-        },
-        icon: const Icon(Icons.add),
-        label: const Text('Add Memory'),
-        backgroundColor: AppTheme.primaryColor,
+      floatingActionButton: ExpandableFab(
+        distance: 112.0,
+        children: [
+          ActionButton(
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddScrapbookEntryScreen(
+                    itinerary: widget.itinerary,
+                  ),
+                ),
+              );
+              
+              if (result == true) {
+                // Refresh entries if a new one was added
+                _loadEntries();
+              }
+            },
+            icon: const Icon(Icons.photo_camera),
+            tooltip: 'Add Memory',
+          ),
+          ActionButton(
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => CollageCreatorScreen(
+                    itinerary: widget.itinerary,
+                  ),
+                ),
+              );
+              
+              if (result == true) {
+                // Refresh entries if a new one was added
+                _loadEntries();
+              }
+            },
+            icon: const Icon(Icons.collections),
+            tooltip: 'Create Collage',
+          ),
+        ],
       ),
     );
   }
@@ -198,80 +236,130 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
       );
     }
     
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: entries.length,
-      itemBuilder: (context, index) {
-        final entry = entries[index];
-        
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          elevation: 2,
-          child: InkWell(
-            onTap: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ScrapbookEntryDetailScreen(
-                    entry: entry,
-                    itinerary: widget.itinerary,
-                  ),
-                ),
-              );
-              
-              if (result == true) {
-                // Refresh if entry was updated or deleted
-                _loadEntries();
-              }
-            },
-            borderRadius: BorderRadius.circular(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (entry.mediaUrl != null && entry.type == ScrapbookEntryType.photo)
-                  ClipRRect(
+    // Choose between grid and list view
+    if (_isGridView) {
+      return GridView.builder(
+        padding: const EdgeInsets.all(16),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.75,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        itemCount: entries.length,
+        itemBuilder: (context, index) {
+          return _buildGridEntryCard(entries[index]);
+        },
+      );
+    } else {
+      return ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: entries.length,
+        itemBuilder: (context, index) {
+          return _buildListEntryCard(entries[index]);
+        },
+      );
+    }
+  }
+  
+  Widget _buildGridEntryCard(ScrapbookEntry entry) {
+    // Prepare background decoration
+    DecorationImage? backgroundImage;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+    
+    if (MapBackgroundUtils.isMapStyle(entry.backgroundStyle) &&
+        entry.latitude != null &&
+        entry.longitude != null) {
+      backgroundImage = MapBackgroundUtils.getMapBackgroundDecoration(
+        style: entry.backgroundStyle,
+        latitude: entry.latitude!,
+        longitude: entry.longitude!,
+        zoom: entry.zoomLevel ?? 14.0,
+        darkMode: isDarkMode,
+      );
+    }
+    
+    // Use layout style for decoration
+    final decoration = LayoutStyleUtils.getLayoutDecoration(
+      entry.layoutStyle,
+      backgroundImage: backgroundImage,
+      backgroundColor: entry.backgroundStyle == BackgroundStyle.solid 
+          ? entry.backgroundColor 
+          : null,
+      isDarkMode: isDarkMode,
+    );
+    
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () => _navigateToEntryDetail(entry),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          decoration: decoration,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (entry.type == ScrapbookEntryType.photo && entry.mediaUrl != null)
+                Expanded(
+                  flex: 3,
+                  child: ClipRRect(
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
                     ),
                     child: _buildMediaImage(entry.mediaUrl!),
                   ),
-                if (entry.mediaUrl != null && entry.type == ScrapbookEntryType.video)
-                  ClipRRect(
+                ),
+              if (entry.type == ScrapbookEntryType.video && entry.mediaUrl != null)
+                Expanded(
+                  flex: 3,
+                  child: ClipRRect(
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
                     ),
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        Container(
-                          height: 200,
-                          width: double.infinity,
-                          color: Colors.black,
-                          child: _buildVideoThumbnail(entry.mediaUrl!),
-                        ),
-                        Container(
-                          height: 60,
-                          width: 60,
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.7),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
+                        _buildMediaImage(entry.mediaUrl!),
+                        const CircleAvatar(
+                          backgroundColor: Colors.black45,
+                          radius: 20,
+                          child: Icon(
                             Icons.play_arrow,
                             color: Colors.white,
-                            size: 36,
+                            size: 28,
                           ),
                         ),
                       ],
                     ),
                   ),
-                Padding(
-                  padding: const EdgeInsets.all(16),
+                ),
+              if (entry.type == ScrapbookEntryType.collage && entry.mediaUrls != null && entry.mediaUrls!.isNotEmpty)
+                Expanded(
+                  flex: 3,
+                  child: ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                    child: _buildCollagePreview(entry),
+                  ),
+                ),
+              Expanded(
+                flex: (entry.mediaUrl != null && 
+                      (entry.type == ScrapbookEntryType.photo || 
+                       entry.type == ScrapbookEntryType.video)) ||
+                      (entry.type == ScrapbookEntryType.collage && 
+                       entry.mediaUrls != null && 
+                       entry.mediaUrls!.isNotEmpty)
+                     ? 2 : 5,
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -279,133 +367,316 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                              horizontal: 6,
+                              vertical: 2,
                             ),
                             decoration: BoxDecoration(
                               color: _getEntryTypeColor(entry.type).withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(8),
                             ),
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(
                                   _getEntryTypeIcon(entry.type),
-                                  size: 16,
+                                  size: 12,
                                   color: _getEntryTypeColor(entry.type),
                                 ),
-                                const SizedBox(width: 4),
+                                const SizedBox(width: 2),
                                 Text(
                                   _getEntryTypeText(entry.type),
                                   style: AppTheme.labelSmall.copyWith(
                                     color: _getEntryTypeColor(entry.type),
+                                    fontSize: 10,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                          const Spacer(),
-                          Text(
-                            DateFormat('MMM d, yyyy').format(entry.timestamp),
-                            style: AppTheme.bodySmall.copyWith(
-                              color: AppTheme.textSecondaryColor,
-                            ),
-                          ),
                         ],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 4),
                       Text(
                         entry.title,
-                        style: AppTheme.headingSmall,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        entry.content,
-                        style: AppTheme.bodyMedium,
-                        maxLines: 3,
+                        style: LayoutStyleUtils.getTitleTextStyle(
+                          entry.layoutStyle,
+                          isDarkMode: isDarkMode,
+                        ).copyWith(
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (entry.latitude != null && entry.longitude != null) ...[
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.location_on,
-                              size: 16,
-                              color: AppTheme.secondaryColor,
-                            ),
-                            const SizedBox(width: 4),
-                            Expanded(
-                              child: Text(
-                                '${entry.latitude!.toStringAsFixed(4)}, ${entry.longitude!.toStringAsFixed(4)}',
-                                style: AppTheme.bodySmall.copyWith(
-                                  color: AppTheme.secondaryColor,
-                                ),
-                              ),
-                            ),
-                          ],
+                      const SizedBox(height: 4),
+                      Expanded(
+                        child: Text(
+                          entry.content,
+                          style: LayoutStyleUtils.getContentTextStyle(
+                            entry.layoutStyle,
+                            isDarkMode: isDarkMode,
+                          ).copyWith(
+                            fontSize: 12,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        DateFormat('MMM d, yyyy').format(entry.timestamp),
+                        style: AppTheme.bodySmall.copyWith(
+                          color: AppTheme.textSecondaryColor,
+                          fontSize: 10,
+                        ),
+                      ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMediaImage(String mediaUrl) {
-    if (mediaUrl.startsWith('file://')) {
-      final filePath = mediaUrl.replaceFirst('file://', '');
-      return Image.file(
-        File(filePath),
-        height: 200,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildImageError();
-        },
-      );
-    } else {
-      return Image.network(
-        mediaUrl,
-        height: 200,
-        width: double.infinity,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return _buildImageError();
-        },
-      );
-    }
-  }
-
-  Widget _buildVideoThumbnail(String mediaUrl) {
-    // In a real app, we'd generate a thumbnail for videos
-    // For now, just show a placeholder or image with play button
-    return Container(
-      color: Colors.black,
-      child: Center(
-        child: Icon(
-          Icons.videocam,
-          size: 48,
-          color: Colors.white.withOpacity(0.6),
         ),
       ),
     );
   }
-
-  Widget _buildImageError() {
+  
+  Widget _buildListEntryCard(ScrapbookEntry entry) {
+    // Prepare background decoration
+    DecorationImage? backgroundImage;
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    final isDarkMode = themeProvider.isDarkMode;
+    
+    if (MapBackgroundUtils.isMapStyle(entry.backgroundStyle) &&
+        entry.latitude != null &&
+        entry.longitude != null) {
+      backgroundImage = MapBackgroundUtils.getMapBackgroundDecoration(
+        style: entry.backgroundStyle,
+        latitude: entry.latitude!,
+        longitude: entry.longitude!,
+        zoom: entry.zoomLevel ?? 14.0,
+        darkMode: isDarkMode,
+      );
+    }
+    
+    final decoration = LayoutStyleUtils.getLayoutDecoration(
+      entry.layoutStyle,
+      borderRadius: BorderRadius.circular(16),
+      backgroundImage: backgroundImage,
+      backgroundColor: entry.backgroundStyle == BackgroundStyle.solid 
+          ? entry.backgroundColor 
+          : null,
+      isDarkMode: isDarkMode,
+    );
+    
     return Container(
-      height: 200,
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: decoration,
+      child: Card(
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        elevation: 2,
+        child: InkWell(
+          onTap: () => _navigateToEntryDetail(entry),
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (entry.mediaUrl != null && entry.type == ScrapbookEntryType.photo)
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  child: _buildMediaImage(entry.mediaUrl!),
+                ),
+              if (entry.mediaUrl != null && entry.type == ScrapbookEntryType.video)
+                ClipRRect(
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      _buildMediaImage(entry.mediaUrl!),
+                      const CircleAvatar(
+                        backgroundColor: Colors.black45,
+                        radius: 24,
+                        child: Icon(
+                          Icons.play_arrow,
+                          color: Colors.white,
+                          size: 32,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Padding(
+                padding: LayoutStyleUtils.getLayoutContentPadding(entry.layoutStyle),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: _getEntryTypeColor(entry.type).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _getEntryTypeIcon(entry.type),
+                                size: 16,
+                                color: _getEntryTypeColor(entry.type),
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                _getEntryTypeText(entry.type),
+                                style: AppTheme.labelSmall.copyWith(
+                                  color: _getEntryTypeColor(entry.type),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        Text(
+                          DateFormat('MMM d, yyyy').format(entry.timestamp),
+                          style: AppTheme.bodySmall.copyWith(
+                            color: AppTheme.textSecondaryColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      entry.title,
+                      style: LayoutStyleUtils.getTitleTextStyle(
+                        entry.layoutStyle,
+                        isDarkMode: isDarkMode,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      entry.content,
+                      style: LayoutStyleUtils.getContentTextStyle(
+                        entry.layoutStyle,
+                        isDarkMode: isDarkMode,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (entry.latitude != null && entry.longitude != null) ...[
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Location attached',
+                            style: AppTheme.bodySmall.copyWith(
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Future<void> _navigateToEntryDetail(ScrapbookEntry entry) async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ScrapbookEntryDetailScreen(
+          entry: entry,
+          itinerary: widget.itinerary,
+        ),
+      ),
+    );
+    
+    if (result == true) {
+      // Refresh if entry was updated or deleted
+      _loadEntries();
+    }
+  }
+
+  Widget _buildMediaImage(String url) {
+    if (url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 200,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: double.infinity,
+            height: 200,
+            color: Colors.grey.shade300,
+            child: const Center(
+              child: Icon(
+                Icons.error_outline,
+                color: Colors.grey,
+                size: 40,
+              ),
+            ),
+          );
+        },
+      );
+    } else if (url.startsWith('file://')) {
+      return Image.file(
+        File(url.replaceFirst('file://', '')),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: 200,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: double.infinity,
+            height: 200,
+            color: Colors.grey.shade300,
+            child: const Center(
+              child: Icon(
+                Icons.error_outline,
+                color: Colors.grey,
+                size: 40,
+              ),
+            ),
+          );
+        },
+      );
+    }
+    
+    return Container(
       width: double.infinity,
-      color: AppTheme.backgroundColor,
-      child: const Icon(
-        Icons.image_not_supported,
-        color: AppTheme.textSecondaryColor,
-        size: 64,
+      height: 200,
+      color: Colors.grey.shade300,
+      child: const Center(
+        child: Icon(
+          Icons.image_not_supported,
+          color: Colors.grey,
+          size: 40,
+        ),
       ),
     );
   }
@@ -482,26 +753,15 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
   IconData _getEntryTypeIcon(ScrapbookEntryType type) {
     switch (type) {
       case ScrapbookEntryType.photo:
-        return Icons.photo;
+        return Icons.photo_camera;
       case ScrapbookEntryType.video:
         return Icons.videocam;
       case ScrapbookEntryType.note:
         return Icons.note;
       case ScrapbookEntryType.audio:
         return Icons.mic;
-    }
-  }
-
-  String _getEntryTypeText(ScrapbookEntryType type) {
-    switch (type) {
-      case ScrapbookEntryType.photo:
-        return 'Photo';
-      case ScrapbookEntryType.video:
-        return 'Video';
-      case ScrapbookEntryType.note:
-        return 'Note';
-      case ScrapbookEntryType.audio:
-        return 'Audio';
+      case ScrapbookEntryType.collage:
+        return Icons.collections;
     }
   }
 
@@ -515,6 +775,310 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
         return Colors.green;
       case ScrapbookEntryType.audio:
         return Colors.purple;
+      case ScrapbookEntryType.collage:
+        return Colors.orange;
     }
+  }
+
+  String _getEntryTypeText(ScrapbookEntryType type) {
+    switch (type) {
+      case ScrapbookEntryType.photo:
+        return 'Photo';
+      case ScrapbookEntryType.video:
+        return 'Video';
+      case ScrapbookEntryType.note:
+        return 'Note';
+      case ScrapbookEntryType.audio:
+        return 'Audio';
+      case ScrapbookEntryType.collage:
+        return 'Collage';
+    }
+  }
+
+  Widget _buildCollagePreview(ScrapbookEntry entry) {
+    if (entry.mediaUrls == null || entry.mediaUrls!.isEmpty) {
+      return Container(
+        color: Colors.grey.shade200,
+        child: const Center(child: Text('No images')),
+      );
+    }
+
+    final mediaUrls = entry.mediaUrls!;
+    
+    switch (entry.collageLayout) {
+      case CollageLayout.grid2x2:
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          children: mediaUrls
+              .take(4)
+              .map((url) => _buildMediaImage(url))
+              .toList(),
+        );
+      case CollageLayout.grid3x3:
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 3,
+          children: mediaUrls
+              .take(9)
+              .map((url) => _buildMediaImage(url))
+              .toList(),
+        );
+      case CollageLayout.horizontal:
+        return Row(
+          children: mediaUrls
+              .take(3)
+              .map((url) => Expanded(child: _buildMediaImage(url)))
+              .toList(),
+        );
+      case CollageLayout.vertical:
+        return Column(
+          children: mediaUrls
+              .take(3)
+              .map((url) => Expanded(child: _buildMediaImage(url)))
+              .toList(),
+        );
+      case CollageLayout.featured:
+        if (mediaUrls.length == 1) {
+          return _buildMediaImage(mediaUrls.first);
+        }
+        return Column(
+          children: [
+            Expanded(flex: 2, child: _buildMediaImage(mediaUrls.first)),
+            const SizedBox(height: 2),
+            Expanded(
+              child: Row(
+                children: mediaUrls
+                    .skip(1)
+                    .take(3)
+                    .map((url) => Expanded(child: _buildMediaImage(url)))
+                    .toList(),
+              ),
+            ),
+          ],
+        );
+      default:
+        // Default grid2x2
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          children: mediaUrls
+              .take(4)
+              .map((url) => _buildMediaImage(url))
+              .toList(),
+        );
+    }
+  }
+}
+
+// Expandable FAB implementation
+class ExpandableFab extends StatefulWidget {
+  final double distance;
+  final List<Widget> children;
+
+  const ExpandableFab({
+    super.key,
+    required this.distance,
+    required this.children,
+  });
+
+  @override
+  State<ExpandableFab> createState() => _ExpandableFabState();
+}
+
+class _ExpandableFabState extends State<ExpandableFab> with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<double> _expandAnimation;
+  bool _open = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      value: _open ? 1.0 : 0.0,
+      duration: const Duration(milliseconds: 250),
+      vsync: this,
+    );
+    _expandAnimation = CurvedAnimation(
+      curve: Curves.fastOutSlowIn,
+      reverseCurve: Curves.easeOutQuad,
+      parent: _controller,
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _toggle() {
+    setState(() {
+      _open = !_open;
+      if (_open) {
+        _controller.forward();
+      } else {
+        _controller.reverse();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.expand(
+      child: Stack(
+        alignment: Alignment.bottomRight,
+        clipBehavior: Clip.none,
+        children: [
+          _buildTapToCloseFab(),
+          ..._buildExpandingActionButtons(),
+          _buildTapToOpenFab(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTapToCloseFab() {
+    return SizedBox(
+      width: 56.0,
+      height: 56.0,
+      child: Center(
+        child: Material(
+          shape: const CircleBorder(),
+          clipBehavior: Clip.antiAlias,
+          elevation: 4.0,
+          child: InkWell(
+            onTap: _toggle,
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Icon(
+                Icons.close,
+                color: Theme.of(context).primaryColor,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildExpandingActionButtons() {
+    final children = <Widget>[];
+    final count = widget.children.length;
+    final step = 90.0 / (count - 1);
+
+    for (var i = 0; i < count; i++) {
+      children.add(
+        _ExpandingActionButton(
+          directionInDegrees: 90.0 - (step * i),
+          maxDistance: widget.distance,
+          progress: _expandAnimation,
+          child: widget.children[i],
+        ),
+      );
+    }
+
+    return children;
+  }
+
+  Widget _buildTapToOpenFab() {
+    return IgnorePointer(
+      ignoring: _open,
+      child: AnimatedContainer(
+        transformAlignment: Alignment.center,
+        transform: Matrix4.diagonal3Values(
+          _open ? 0.7 : 1.0,
+          _open ? 0.7 : 1.0,
+          1.0,
+        ),
+        duration: const Duration(milliseconds: 250),
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+        child: AnimatedOpacity(
+          opacity: _open ? 0.0 : 1.0,
+          curve: const Interval(0.25, 1.0, curve: Curves.easeInOut),
+          duration: const Duration(milliseconds: 250),
+          child: FloatingActionButton.extended(
+            onPressed: _toggle,
+            icon: const Icon(Icons.add),
+            label: const Text('Add Memory'),
+            backgroundColor: AppTheme.primaryColor,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExpandingActionButton extends StatelessWidget {
+  final double directionInDegrees;
+  final double maxDistance;
+  final Animation<double> progress;
+  final Widget child;
+
+  const _ExpandingActionButton({
+    required this.directionInDegrees,
+    required this.maxDistance,
+    required this.progress,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: progress,
+      builder: (context, child) {
+        final offset = Offset.fromDirection(
+          directionInDegrees * (3.14 / 180.0),
+          progress.value * maxDistance,
+        );
+        return Positioned(
+          right: 4.0 + offset.dx,
+          bottom: 4.0 + offset.dy,
+          child: Transform.rotate(
+            angle: (1.0 - progress.value) * 3.14 / 2,
+            child: child!,
+          ),
+        );
+      },
+      child: FadeTransition(
+        opacity: progress,
+        child: child,
+      ),
+    );
+  }
+}
+
+class ActionButton extends StatelessWidget {
+  final VoidCallback onPressed;
+  final Widget icon;
+  final String? tooltip;
+
+  const ActionButton({
+    super.key,
+    required this.onPressed,
+    required this.icon,
+    this.tooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final Widget button = FloatingActionButton(
+      heroTag: null,
+      onPressed: onPressed,
+      backgroundColor: AppTheme.secondaryColor,
+      child: icon,
+    );
+
+    if (tooltip != null) {
+      return Tooltip(
+        message: tooltip!,
+        child: button,
+      );
+    }
+
+    return button;
   }
 } 

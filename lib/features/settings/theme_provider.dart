@@ -1,29 +1,56 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:safar/core/theme.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+enum AppThemeMode {
+  system,
+  light,
+  dark,
+}
+
 class ThemeProvider extends ChangeNotifier {
-  bool _isDarkMode = false;
-  static const String _prefsKey = 'isDarkMode';
+  AppThemeMode _themeMode = AppThemeMode.system;
+  static const String _prefsKey = 'themeMode';
 
   ThemeProvider() {
     _loadThemePreference();
   }
 
-  bool get isDarkMode => _isDarkMode;
+  AppThemeMode get themeMode => _themeMode;
   
-  ThemeData get themeData => _isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme;
+  bool get isDarkMode {
+    if (_themeMode == AppThemeMode.system) {
+      // Get system brightness
+      final brightness = SchedulerBinding.instance.platformDispatcher.platformBrightness;
+      return brightness == Brightness.dark;
+    }
+    return _themeMode == AppThemeMode.dark;
+  }
+  
+  ThemeData get themeData => isDarkMode ? AppTheme.darkTheme : AppTheme.lightTheme;
 
   // Toggle between light and dark themes
   void toggleTheme() {
-    _isDarkMode = !_isDarkMode;
+    if (_themeMode == AppThemeMode.light) {
+      _themeMode = AppThemeMode.dark;
+    } else {
+      _themeMode = AppThemeMode.light;
+    }
     _saveThemePreference();
     notifyListeners();
   }
 
-  // Set theme explicitly
+  // Set theme mode explicitly
+  void setThemeMode(AppThemeMode mode) {
+    _themeMode = mode;
+    _saveThemePreference();
+    notifyListeners();
+  }
+  
+  // For backward compatibility
   void setDarkMode(bool isDarkMode) {
-    _isDarkMode = isDarkMode;
+    _themeMode = isDarkMode ? AppThemeMode.dark : AppThemeMode.light;
     _saveThemePreference();
     notifyListeners();
   }
@@ -32,11 +59,22 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> _loadThemePreference() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      _isDarkMode = prefs.getBool(_prefsKey) ?? false;
+      final savedMode = prefs.getInt(_prefsKey);
+      
+      if (savedMode != null) {
+        _themeMode = AppThemeMode.values[savedMode];
+      } else {
+        // Check for legacy preference
+        final legacyDarkMode = prefs.getBool('isDarkMode');
+        if (legacyDarkMode != null) {
+          _themeMode = legacyDarkMode ? AppThemeMode.dark : AppThemeMode.light;
+        }
+      }
+      
       notifyListeners();
     } catch (e) {
-      // Fall back to default light theme if there's an error
-      _isDarkMode = false;
+      // Fall back to system theme if there's an error
+      _themeMode = AppThemeMode.system;
     }
   }
 
@@ -44,9 +82,33 @@ class ThemeProvider extends ChangeNotifier {
   Future<void> _saveThemePreference() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_prefsKey, _isDarkMode);
+      await prefs.setInt(_prefsKey, _themeMode.index);
     } catch (e) {
       // Silently fail if there's an error saving preferences
+    }
+  }
+  
+  // Get a friendly name for each theme mode
+  String getThemeModeName(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.system:
+        return 'System Default';
+      case AppThemeMode.light:
+        return 'Light';
+      case AppThemeMode.dark:
+        return 'Dark';
+    }
+  }
+  
+  // Get an icon for each theme mode
+  IconData getThemeModeIcon(AppThemeMode mode) {
+    switch (mode) {
+      case AppThemeMode.system:
+        return Icons.brightness_auto;
+      case AppThemeMode.light:
+        return Icons.brightness_5;
+      case AppThemeMode.dark:
+        return Icons.brightness_3;
     }
   }
 } 

@@ -651,7 +651,7 @@ class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
           }
         } else {
           // Update existing entry
-          final updatedEntry = ScrapbookEntry(
+          final updatedEntry = widget.entryToEdit!.copyWith(
             id: widget.entryToEdit!.id,
             title: _titleController.text,
             content: _contentController.text,
@@ -660,6 +660,11 @@ class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
             latitude: _latitude,
             longitude: _longitude,
             mediaUrl: _isExistingMedia ? _existingMediaPath : null,
+            // Preserve these properties from the original entry
+            backgroundStyle: widget.entryToEdit!.backgroundStyle,
+            layoutStyle: widget.entryToEdit!.layoutStyle,
+            zoomLevel: widget.entryToEdit!.zoomLevel,
+            backgroundColor: widget.entryToEdit!.backgroundColor,
           );
           
           final success = await _scrapbookService.updateEntry(

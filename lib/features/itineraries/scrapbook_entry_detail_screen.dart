@@ -5,6 +5,11 @@ import 'package:safar/models/scrapbook_entry.dart';
 import 'package:safar/models/itinerary.dart';
 import 'package:safar/services/scrapbook_service.dart';
 import 'package:safar/features/itineraries/add_scrapbook_entry_screen.dart';
+import 'package:safar/features/itineraries/edit_scrapbook_layout_screen.dart';
+import 'package:safar/utils/map_background_utils.dart';
+import 'package:safar/utils/layout_style_utils.dart';
+import 'package:safar/features/settings/theme_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
@@ -26,6 +31,13 @@ class ScrapbookEntryDetailScreen extends StatefulWidget {
 class _ScrapbookEntryDetailScreenState extends State<ScrapbookEntryDetailScreen> {
   final ScrapbookService _scrapbookService = ScrapbookService();
   bool _isDeleting = false;
+  late ScrapbookEntry _currentEntry;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentEntry = widget.entry;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -55,67 +67,130 @@ class _ScrapbookEntryDetailScreenState extends State<ScrapbookEntryDetailScreen>
               ),
             )
           : SingleChildScrollView(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildMedia(),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: _getEntryTypeColor().withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    _getEntryTypeIcon(),
-                                    size: 16,
-                                    color: _getEntryTypeColor(),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    _getEntryTypeText(),
-                                    style: AppTheme.labelSmall.copyWith(
+              child: Container(
+                decoration: _getBackgroundDecoration(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildMedia(),
+                    Padding(
+                      padding: LayoutStyleUtils.getLayoutContentPadding(_currentEntry.layoutStyle),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _getEntryTypeColor().withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      _getEntryTypeIcon(),
+                                      size: 16,
                                       color: _getEntryTypeColor(),
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _getEntryTypeText(),
+                                      style: AppTheme.labelSmall.copyWith(
+                                        color: _getEntryTypeColor(),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                DateFormat('MMMM d, yyyy • h:mm a').format(_currentEntry.timestamp),
+                                style: AppTheme.bodySmall.copyWith(
+                                  color: AppTheme.textSecondaryColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _currentEntry.title,
+                            style: LayoutStyleUtils.getTitleTextStyle(
+                              _currentEntry.layoutStyle,
+                              isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _currentEntry.content,
+                            style: LayoutStyleUtils.getContentTextStyle(
+                              _currentEntry.layoutStyle,
+                              isDarkMode: Theme.of(context).brightness == Brightness.dark,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          if (_currentEntry.latitude != null && _currentEntry.longitude != null) ...[
+                            const Text(
+                              'Location',
+                              style: AppTheme.labelLarge,
+                            ),
+                            const SizedBox(height: 8),
+                            Card(
+                              elevation: 2,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.location_on,
+                                      color: AppTheme.secondaryColor,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            widget.itinerary.destination,
+                                            style: AppTheme.bodyMedium.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Text(
+                                            'Lat: ${_currentEntry.latitude!.toStringAsFixed(6)}, Lng: ${_currentEntry.longitude!.toStringAsFixed(6)}',
+                                            style: AppTheme.bodySmall.copyWith(
+                                              color: AppTheme.textSecondaryColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.map),
+                                      onPressed: () {
+                                        MapBackgroundUtils.openInGoogleMaps(
+                                          _currentEntry.latitude!,
+                                          _currentEntry.longitude!,
+                                        );
+                                      },
+                                      tooltip: 'Open in Maps',
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            const Spacer(),
-                            Text(
-                              DateFormat('MMMM d, yyyy • h:mm a').format(widget.entry.timestamp),
-                              style: AppTheme.bodySmall.copyWith(
-                                color: AppTheme.textSecondaryColor,
-                              ),
-                            ),
+                            const SizedBox(height: 24),
                           ],
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          widget.entry.title,
-                          style: AppTheme.headingMedium,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          widget.entry.content,
-                          style: AppTheme.bodyLarge,
-                        ),
-                        const SizedBox(height: 24),
-                        if (widget.entry.latitude != null && widget.entry.longitude != null) ...[
                           const Text(
-                            'Location',
+                            'Part of Itinerary',
                             style: AppTheme.labelLarge,
                           ),
                           const SizedBox(height: 8),
@@ -128,24 +203,38 @@ class _ScrapbookEntryDetailScreenState extends State<ScrapbookEntryDetailScreen>
                               padding: const EdgeInsets.all(16),
                               child: Row(
                                 children: [
-                                  const Icon(
-                                    Icons.location_on,
-                                    color: AppTheme.secondaryColor,
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      image: DecorationImage(
+                                        image: NetworkImage(widget.itinerary.coverImage),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          widget.itinerary.destination,
+                                          widget.itinerary.title,
                                           style: AppTheme.bodyMedium.copyWith(
                                             fontWeight: FontWeight.bold,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Lat: ${widget.entry.latitude!.toStringAsFixed(6)}, Lng: ${widget.entry.longitude!.toStringAsFixed(6)}',
+                                          widget.itinerary.destination,
+                                          style: AppTheme.bodySmall.copyWith(
+                                            color: AppTheme.textSecondaryColor,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${DateFormat('MMM d').format(widget.itinerary.dateRange.start)} - ${DateFormat('MMM d, yyyy').format(widget.itinerary.dateRange.end)}',
                                           style: AppTheme.bodySmall.copyWith(
                                             color: AppTheme.textSecondaryColor,
                                           ),
@@ -158,131 +247,172 @@ class _ScrapbookEntryDetailScreenState extends State<ScrapbookEntryDetailScreen>
                             ),
                           ),
                           const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _customizeLayout,
+                                  icon: const Icon(Icons.style),
+                                  label: const Text('Customize Layout'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppTheme.secondaryColor,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.all(16),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Share this Memory',
+                            style: AppTheme.labelLarge,
+                          ),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _shareEntry,
+                              icon: const Icon(Icons.share),
+                              label: const Text('Share with Friends'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryColor,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.all(16),
+                              ),
+                            ),
+                          ),
                         ],
-                        const Text(
-                          'Part of Itinerary',
-                          style: AppTheme.labelLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        Card(
-                          elevation: 2,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 60,
-                                  height: 60,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(8),
-                                    image: DecorationImage(
-                                      image: NetworkImage(widget.itinerary.coverImage),
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        widget.itinerary.title,
-                                        style: AppTheme.bodyMedium.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        widget.itinerary.destination,
-                                        style: AppTheme.bodySmall.copyWith(
-                                          color: AppTheme.textSecondaryColor,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        '${DateFormat('MMM d').format(widget.itinerary.dateRange.start)} - ${DateFormat('MMM d, yyyy').format(widget.itinerary.dateRange.end)}',
-                                        style: AppTheme.bodySmall.copyWith(
-                                          color: AppTheme.textSecondaryColor,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-                        const Text(
-                          'Share this Memory',
-                          style: AppTheme.labelLarge,
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton.icon(
-                            onPressed: _shareEntry,
-                            icon: const Icon(Icons.share),
-                            label: const Text('Share with Friends'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.primaryColor,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.all(16),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
     );
   }
 
+  BoxDecoration _getBackgroundDecoration() {
+    // For map backgrounds
+    DecorationImage? backgroundImage;
+    final themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+    final isDarkMode = themeProvider.isDarkMode;
+    
+    if (MapBackgroundUtils.isMapStyle(_currentEntry.backgroundStyle) &&
+        _currentEntry.latitude != null &&
+        _currentEntry.longitude != null) {
+      backgroundImage = MapBackgroundUtils.getMapBackgroundDecoration(
+        style: _currentEntry.backgroundStyle,
+        latitude: _currentEntry.latitude!,
+        longitude: _currentEntry.longitude!,
+        zoom: _currentEntry.zoomLevel ?? 14.0,
+        darkMode: isDarkMode,
+      );
+    }
+    
+    // Get layout decoration
+    return LayoutStyleUtils.getLayoutDecoration(
+      _currentEntry.layoutStyle,
+      backgroundImage: backgroundImage,
+      backgroundColor: _currentEntry.backgroundStyle == BackgroundStyle.solid 
+          ? _currentEntry.backgroundColor
+          : null,
+      isDarkMode: isDarkMode,
+    );
+  }
+
   Widget _buildMedia() {
-    if (widget.entry.type == ScrapbookEntryType.photo && widget.entry.mediaUrl != null) {
-      return _buildPhotoMedia(widget.entry.mediaUrl!);
-    } else if (widget.entry.type == ScrapbookEntryType.video && widget.entry.mediaUrl != null) {
-      return _buildVideoMedia(widget.entry.mediaUrl!);
-    } else if (widget.entry.type == ScrapbookEntryType.audio) {
+    if (_currentEntry.type == ScrapbookEntryType.photo && _currentEntry.mediaUrl != null) {
+      return _buildPhotoMedia(_currentEntry.mediaUrl!);
+    } else if (_currentEntry.type == ScrapbookEntryType.video && _currentEntry.mediaUrl != null) {
+      return _buildVideoMedia(_currentEntry.mediaUrl!);
+    } else if (_currentEntry.type == ScrapbookEntryType.audio && _currentEntry.mediaUrl != null) {
       return _buildAudioMedia();
-    } else {
-      return _buildPlaceholderMedia();
+    } else if (_currentEntry.type == ScrapbookEntryType.collage && _currentEntry.mediaUrls != null && _currentEntry.mediaUrls!.isNotEmpty) {
+      return _buildCollageMedia(_currentEntry.mediaUrls!);
+    }
+    
+    return const SizedBox();
+  }
+  
+  Widget _buildPhotoMedia(String url) {
+    final image = url.startsWith('http')
+        ? Image.network(url, fit: BoxFit.cover)
+        : Image.file(
+            File(url.replaceFirst('file://', '')),
+            fit: BoxFit.cover,
+          );
+    
+    // For certain layouts, we want a border around the image
+    switch (_currentEntry.layoutStyle) {
+      case LayoutStyle.polaroid:
+        return Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 5,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AspectRatio(
+                aspectRatio: 1.0,
+                child: image,
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+        
+      case LayoutStyle.postcard:
+        return Container(
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.grey.shade300,
+              width: 1,
+            ),
+          ),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: image,
+          ),
+        );
+        
+      case LayoutStyle.journal:
+        return Container(
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: Colors.brown.shade200,
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 3,
+                spreadRadius: 1,
+              ),
+            ],
+          ),
+          child: AspectRatio(
+            aspectRatio: 4 / 3,
+            child: image,
+          ),
+        );
+        
+      default:
+        return AspectRatio(
+          aspectRatio: 16 / 9,
+          child: image,
+        );
     }
   }
-
-  Widget _buildPhotoMedia(String mediaUrl) {
-    if (mediaUrl.startsWith('file://')) {
-      final filePath = mediaUrl.replaceFirst('file://', '');
-      return Container(
-        width: double.infinity,
-        height: 300,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: FileImage(File(filePath)),
-            fit: BoxFit.cover,
-          ),
-        ),
-      );
-    } else {
-      return Container(
-        width: double.infinity,
-        height: 300,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: NetworkImage(mediaUrl),
-            fit: BoxFit.cover,
-          ),
-        ),
-      );
-    }
-  }
-
+  
   Widget _buildVideoMedia(String mediaUrl) {
     // In a real app, we'd display the video with a video player
     return Stack(
@@ -379,19 +509,172 @@ class _ScrapbookEntryDetailScreenState extends State<ScrapbookEntryDetailScreen>
     );
   }
 
-  Widget _buildPlaceholderMedia() {
+  Widget _buildCollageMedia(List<String> mediaUrls) {
+    final collageLayout = _currentEntry.collageLayout ?? CollageLayout.grid2x2;
+    
+    switch (collageLayout) {
+      case CollageLayout.grid2x2:
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          children: mediaUrls
+              .take(4)
+              .map(_buildCollageImage)
+              .toList(),
+        );
+      case CollageLayout.grid3x3:
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 3,
+          children: mediaUrls
+              .take(9)
+              .map(_buildCollageImage)
+              .toList(),
+        );
+      case CollageLayout.horizontal:
+        return SizedBox(
+          height: 200,
+          child: Row(
+            children: mediaUrls
+                .take(3)
+                .map((url) => Expanded(child: _buildCollageImage(url)))
+                .toList(),
+          ),
+        );
+      case CollageLayout.vertical:
+        return Column(
+          children: mediaUrls
+              .take(3)
+              .map((url) => SizedBox(
+                    height: 150,
+                    width: double.infinity,
+                    child: _buildCollageImage(url),
+                  ))
+              .toList(),
+        );
+      case CollageLayout.featured:
+        if (mediaUrls.isEmpty) return const SizedBox();
+        if (mediaUrls.length == 1) {
+          return _buildCollageImage(mediaUrls.first);
+        }
+        return Column(
+          children: [
+            SizedBox(
+              height: 200,
+              width: double.infinity,
+              child: _buildCollageImage(mediaUrls.first),
+            ),
+            const SizedBox(height: 2),
+            SizedBox(
+              height: 100,
+              child: Row(
+                children: mediaUrls
+                    .skip(1)
+                    .take(3)
+                    .map((url) => Expanded(
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 1),
+                            child: _buildCollageImage(url),
+                          ),
+                        ))
+                    .toList(),
+              ),
+            ),
+          ],
+        );
+      default:
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: 2,
+          children: mediaUrls
+              .take(4)
+              .map(_buildCollageImage)
+              .toList(),
+        );
+    }
+  }
+  
+  Widget _buildCollageImage(String url) {
+    if (url.startsWith('http')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey.shade300,
+            child: const Center(
+              child: Icon(
+                Icons.error_outline,
+                color: Colors.grey,
+                size: 40,
+              ),
+            ),
+          );
+        },
+      );
+    } else if (url.startsWith('file://')) {
+      return Image.file(
+        File(url.replaceFirst('file://', '')),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            color: Colors.grey.shade300,
+            child: const Center(
+              child: Icon(
+                Icons.error_outline,
+                color: Colors.grey,
+                size: 40,
+              ),
+            ),
+          );
+        },
+      );
+    }
+    
     return Container(
-      width: double.infinity,
-      height: 150,
-      color: AppTheme.backgroundColor,
-      child: Center(
+      color: Colors.grey.shade300,
+      child: const Center(
         child: Icon(
-          _getEntryTypeIcon(),
-          size: 64,
-          color: _getEntryTypeColor().withOpacity(0.5),
+          Icons.image_not_supported,
+          color: Colors.grey,
+          size: 40,
         ),
       ),
     );
+  }
+
+  Future<void> _customizeLayout() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditScrapbookLayoutScreen(
+          entry: _currentEntry,
+          itinerary: widget.itinerary,
+        ),
+      ),
+    );
+    
+    if (result == true) {
+      // Reload the entry
+      final updatedEntries = await _scrapbookService.getEntriesForItinerary(widget.itinerary.id);
+      final updatedEntry = updatedEntries.firstWhere(
+        (e) => e.id == _currentEntry.id,
+        orElse: () => _currentEntry,
+      );
+      
+      if (mounted) {
+        setState(() {
+          _currentEntry = updatedEntry;
+        });
+      }
+    }
   }
 
   void _editEntry() async {
@@ -528,46 +811,37 @@ class _ScrapbookEntryDetailScreenState extends State<ScrapbookEntryDetailScreen>
   }
 
   String _getAppBarTitle() {
-    switch (widget.entry.type) {
+    switch (_currentEntry.type) {
       case ScrapbookEntryType.photo:
-        return 'Photo';
+        return 'Photo Memory';
       case ScrapbookEntryType.video:
-        return 'Video';
+        return 'Video Memory';
       case ScrapbookEntryType.note:
-        return 'Note';
+        return 'Note Memory';
       case ScrapbookEntryType.audio:
-        return 'Audio';
+        return 'Audio Memory';
+      case ScrapbookEntryType.collage:
+        return 'Photo Collage';
     }
   }
 
   IconData _getEntryTypeIcon() {
-    switch (widget.entry.type) {
+    switch (_currentEntry.type) {
       case ScrapbookEntryType.photo:
-        return Icons.photo;
+        return Icons.photo_camera;
       case ScrapbookEntryType.video:
         return Icons.videocam;
       case ScrapbookEntryType.note:
         return Icons.note;
       case ScrapbookEntryType.audio:
         return Icons.mic;
-    }
-  }
-
-  String _getEntryTypeText() {
-    switch (widget.entry.type) {
-      case ScrapbookEntryType.photo:
-        return 'Photo';
-      case ScrapbookEntryType.video:
-        return 'Video';
-      case ScrapbookEntryType.note:
-        return 'Note';
-      case ScrapbookEntryType.audio:
-        return 'Audio';
+      case ScrapbookEntryType.collage:
+        return Icons.collections;
     }
   }
 
   Color _getEntryTypeColor() {
-    switch (widget.entry.type) {
+    switch (_currentEntry.type) {
       case ScrapbookEntryType.photo:
         return Colors.blue;
       case ScrapbookEntryType.video:
@@ -576,6 +850,23 @@ class _ScrapbookEntryDetailScreenState extends State<ScrapbookEntryDetailScreen>
         return Colors.green;
       case ScrapbookEntryType.audio:
         return Colors.purple;
+      case ScrapbookEntryType.collage:
+        return Colors.orange;
+    }
+  }
+
+  String _getEntryTypeText() {
+    switch (_currentEntry.type) {
+      case ScrapbookEntryType.photo:
+        return 'Photo';
+      case ScrapbookEntryType.video:
+        return 'Video';
+      case ScrapbookEntryType.note:
+        return 'Note';
+      case ScrapbookEntryType.audio:
+        return 'Audio';
+      case ScrapbookEntryType.collage:
+        return 'Collage';
     }
   }
 } 
