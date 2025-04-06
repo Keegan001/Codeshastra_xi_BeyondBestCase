@@ -137,6 +137,18 @@ const itinerarySchema = new mongoose.Schema(
       trim: true,
       description: 'Where the user heard about the service'
     },
+    sourceLocation: {
+      type: String,
+      trim: true,
+      default: 'Borivali',
+      description: 'Starting location for the trip'
+    },
+    numberOfPeople: {
+      type: Number,
+      default: 1,
+      min: 1,
+      description: 'Number of people on the trip'
+    },
     destination: {
       name: {
         type: String

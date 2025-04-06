@@ -53,7 +53,9 @@ const createItinerarySchema = Joi.object({
   budget: budgetSchema,
   transportation: transportationSchema,
   generateDays: Joi.boolean().default(true),
-  source: Joi.string().max(200)
+  source: Joi.string().max(200),
+  sourceLocation: Joi.string().max(100).default('Borivali'),
+  numberOfPeople: Joi.number().integer().min(1).default(1)
 });
 
 const updateItinerarySchema = Joi.object({

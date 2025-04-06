@@ -27,7 +27,9 @@ class ItineraryService {
         },
         transportation: itineraryData.transportation || { mode: 'mixed' },
         budget: itineraryData.budget || { currency: 'USD', total: 0, spent: 0 },
-        source: itineraryData.source || ''
+        source: itineraryData.source || '',
+        sourceLocation: itineraryData.sourceLocation || 'Borivali',
+        numberOfPeople: itineraryData.numberOfPeople || 1
       });
 
       // Add route locations if provided
