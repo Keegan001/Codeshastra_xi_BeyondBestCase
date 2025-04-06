@@ -10,8 +10,15 @@ import 'package:safar/features/itineraries/itineraries_screen.dart';
 import 'package:safar/features/profile/profile_screen.dart';
 import 'package:safar/features/settings/theme_provider.dart';
 import 'package:safar/widgets/custom_nav_bar.dart';
+import 'package:safar/services/storage_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize services
+  final storageService = StorageService();
+  await storageService.init();
+  
   runApp(
     MultiProvider(
       providers: [

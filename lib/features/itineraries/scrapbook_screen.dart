@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:safar/core/theme.dart';
 import 'package:safar/models/itinerary.dart';
 import 'package:safar/models/scrapbook_entry.dart';
 import 'package:safar/features/itineraries/scrapbook_entry_detail_screen.dart';
 import 'package:safar/features/itineraries/add_scrapbook_entry_screen.dart';
+import 'package:safar/services/scrapbook_service.dart';
 import 'package:intl/intl.dart';
 
 class ScrapbookScreen extends StatefulWidget {
@@ -21,6 +23,47 @@ class ScrapbookScreen extends StatefulWidget {
 class _ScrapbookScreenState extends State<ScrapbookScreen> {
   String _selectedFilter = 'All';
   final List<String> _filterOptions = ['All', 'Photos', 'Videos', 'Notes', 'Audio'];
+  final ScrapbookService _scrapbookService = ScrapbookService();
+  bool _isLoading = true;
+  List<ScrapbookEntry> _entries = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEntries();
+  }
+
+  Future<void> _loadEntries() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      final entries = await _scrapbookService.getEntriesForItinerary(widget.itinerary.id);
+      
+      if (mounted) {
+        setState(() {
+          _entries = entries;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error loading scrapbook entries: $e');
+      if (mounted) {
+        setState(() {
+          _entries = [];
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading entries: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,11 +72,9 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
         title: Text('${widget.itinerary.title} Scrapbook'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.map),
-            onPressed: () {
-              // Show entries on map
-            },
-            tooltip: 'View on Map',
+            icon: const Icon(Icons.refresh),
+            onPressed: _loadEntries,
+            tooltip: 'Refresh',
           ),
         ],
       ),
@@ -41,13 +82,15 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
         children: [
           _buildFilters(),
           Expanded(
-            child: _buildScrapbookEntries(),
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _buildScrapbookEntries(),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
+        onPressed: () async {
+          final result = await Navigator.push(
             context,
             MaterialPageRoute(
               builder: (context) => AddScrapbookEntryScreen(
@@ -55,6 +98,11 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
               ),
             ),
           );
+          
+          if (result == true) {
+            // Refresh entries if a new one was added
+            _loadEntries();
+          }
         },
         icon: const Icon(Icons.add),
         label: const Text('Add Memory'),
@@ -163,8 +211,8 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
           ),
           elevation: 2,
           child: InkWell(
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => ScrapbookEntryDetailScreen(
@@ -173,6 +221,11 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
                   ),
                 ),
               );
+              
+              if (result == true) {
+                // Refresh if entry was updated or deleted
+                _loadEntries();
+              }
             },
             borderRadius: BorderRadius.circular(16),
             child: Column(
@@ -184,24 +237,7 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
                       topLeft: Radius.circular(16),
                       topRight: Radius.circular(16),
                     ),
-                    child: Image.network(
-                      entry.mediaUrl!,
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 200,
-                          width: double.infinity,
-                          color: AppTheme.backgroundColor,
-                          child: const Icon(
-                            Icons.image_not_supported,
-                            color: AppTheme.textSecondaryColor,
-                            size: 64,
-                          ),
-                        );
-                      },
-                    ),
+                    child: _buildMediaImage(entry.mediaUrl!),
                   ),
                 if (entry.mediaUrl != null && entry.type == ScrapbookEntryType.video)
                   ClipRRect(
@@ -212,11 +248,11 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
-                        Image.asset(
-                          'assets/images/placeholder.png',
+                        Container(
                           height: 200,
                           width: double.infinity,
-                          fit: BoxFit.cover,
+                          color: Colors.black,
+                          child: _buildVideoThumbnail(entry.mediaUrl!),
                         ),
                         Container(
                           height: 60,
@@ -307,12 +343,6 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
                                 ),
                               ),
                             ),
-                            TextButton(
-                              onPressed: () {
-                                // Open in maps
-                              },
-                              child: const Text('View on Map'),
-                            ),
                           ],
                         ),
                       ],
@@ -327,11 +357,62 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
     );
   }
 
+  Widget _buildMediaImage(String mediaUrl) {
+    if (mediaUrl.startsWith('file://')) {
+      final filePath = mediaUrl.replaceFirst('file://', '');
+      return Image.file(
+        File(filePath),
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildImageError();
+        },
+      );
+    } else {
+      return Image.network(
+        mediaUrl,
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildImageError();
+        },
+      );
+    }
+  }
+
+  Widget _buildVideoThumbnail(String mediaUrl) {
+    // In a real app, we'd generate a thumbnail for videos
+    // For now, just show a placeholder or image with play button
+    return Container(
+      color: Colors.black,
+      child: Center(
+        child: Icon(
+          Icons.videocam,
+          size: 48,
+          color: Colors.white.withOpacity(0.6),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageError() {
+    return Container(
+      height: 200,
+      width: double.infinity,
+      color: AppTheme.backgroundColor,
+      child: const Icon(
+        Icons.image_not_supported,
+        color: AppTheme.textSecondaryColor,
+        size: 64,
+      ),
+    );
+  }
+
   List<ScrapbookEntry> _getFilteredEntries() {
-    final allEntries = widget.itinerary.scrapbookEntries;
-    
     if (_selectedFilter == 'All') {
-      return allEntries;
+      return _entries;
     }
     
     ScrapbookEntryType? typeFilter;
@@ -350,7 +431,7 @@ class _ScrapbookScreenState extends State<ScrapbookScreen> {
         break;
     }
     
-    return allEntries.where((entry) => entry.type == typeFilter).toList();
+    return _entries.where((entry) => entry.type == typeFilter).toList();
   }
 
   IconData _getEmptyStateIcon() {

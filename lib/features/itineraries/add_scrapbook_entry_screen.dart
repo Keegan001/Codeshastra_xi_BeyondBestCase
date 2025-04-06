@@ -1,8 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:safar/core/theme.dart';
 import 'package:safar/models/itinerary.dart';
 import 'package:safar/models/scrapbook_entry.dart';
+import 'package:safar/services/scrapbook_service.dart';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 
 class AddScrapbookEntryScreen extends StatefulWidget {
   final Itinerary itinerary;
@@ -20,18 +23,21 @@ class AddScrapbookEntryScreen extends StatefulWidget {
 
 class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
   final _formKey = GlobalKey<FormState>();
+  final ScrapbookService _scrapbookService = ScrapbookService();
   
   late TextEditingController _titleController;
   late TextEditingController _contentController;
   late DateTime _selectedDate;
   late TimeOfDay _selectedTime;
   ScrapbookEntryType _selectedType = ScrapbookEntryType.note;
-  String? _mediaPath;
+  XFile? _selectedMediaFile;
+  bool _isExistingMedia = false;
+  String? _existingMediaPath;
   double? _latitude;
   double? _longitude;
   bool _isUploading = false;
   bool _useCurrentLocation = true;
-
+  
   @override
   void initState() {
     super.initState();
@@ -47,7 +53,8 @@ class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
       _selectedType = widget.entryToEdit!.type;
       _latitude = widget.entryToEdit!.latitude;
       _longitude = widget.entryToEdit!.longitude;
-      _mediaPath = widget.entryToEdit!.mediaUrl;
+      _existingMediaPath = widget.entryToEdit!.mediaUrl;
+      _isExistingMedia = _existingMediaPath != null;
       _useCurrentLocation = _latitude == null;
     } else {
       _selectedDate = DateTime.now();
@@ -81,7 +88,7 @@ class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
                 children: [
                   CircularProgressIndicator(),
                   SizedBox(height: 16),
-                  Text('Uploading...'),
+                  Text('Saving entry...'),
                 ],
               ),
             )
@@ -218,6 +225,18 @@ class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
                             icon: const Icon(Icons.map),
                             onPressed: () {
                               // Open map to select location
+                              // For now, just set a dummy location
+                              setState(() {
+                                _latitude = 40.7128;
+                                _longitude = -74.0060;
+                              });
+                              
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Location selected: New York City'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
                             },
                           ),
                       ],
@@ -293,6 +312,10 @@ class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
           onSelectionChanged: (Set<ScrapbookEntryType> selected) {
             setState(() {
               _selectedType = selected.first;
+              // Reset media selection if type changes
+              if (_selectedType != ScrapbookEntryType.note && !_isExistingMedia) {
+                _selectedMediaFile = null;
+              }
             });
           },
         ),
@@ -313,12 +336,14 @@ class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
           style: AppTheme.labelLarge,
         ),
         const SizedBox(height: 8),
-        if (_mediaPath != null) ...[
+        if (_isExistingMedia && _existingMediaPath != null) ...[
           _selectedType == ScrapbookEntryType.photo
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(12),
                   child: Image.network(
-                    _mediaPath!,
+                    _existingMediaPath!.startsWith('file://') 
+                        ? _existingMediaPath!.replaceFirst('file://', '') 
+                        : _existingMediaPath!,
                     height: 200,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -371,7 +396,65 @@ class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
             child: TextButton.icon(
               onPressed: () {
                 setState(() {
-                  _mediaPath = null;
+                  _isExistingMedia = false;
+                  _existingMediaPath = null;
+                  _selectedMediaFile = null;
+                });
+              },
+              icon: const Icon(Icons.delete),
+              label: const Text('Remove'),
+              style: TextButton.styleFrom(
+                foregroundColor: AppTheme.errorColor,
+              ),
+            ),
+          ),
+        ] else if (_selectedMediaFile != null) ...[
+          _selectedType == ScrapbookEntryType.photo
+              ? ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    File(_selectedMediaFile!.path),
+                    height: 200,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              : Container(
+                  height: 100,
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppTheme.backgroundColor,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppTheme.dividerColor),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _selectedType == ScrapbookEntryType.video
+                            ? Icons.videocam
+                            : Icons.mic,
+                        size: 36,
+                        color: AppTheme.primaryColor,
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          _selectedType == ScrapbookEntryType.video
+                              ? 'Video selected'
+                              : 'Audio recording selected',
+                          style: AppTheme.bodyMedium,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _selectedMediaFile = null;
                 });
               },
               icon: const Icon(Icons.delete),
@@ -474,33 +557,47 @@ class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
   }
 
   Future<void> _selectMedia() async {
-    // This would use image_picker or file_picker in a real implementation
-    // For now, just simulate selecting media
+    XFile? file;
     
-    setState(() {
-      // Simulate media path
-      if (_selectedType == ScrapbookEntryType.photo) {
-        _mediaPath = 'https://images.unsplash.com/photo-1491555103944-7c647fd857e6';
-      } else if (_selectedType == ScrapbookEntryType.video) {
-        _mediaPath = 'https://example.com/video123.mp4';
-      } else if (_selectedType == ScrapbookEntryType.audio) {
-        _mediaPath = 'https://example.com/audio123.mp3';
+    try {
+      switch (_selectedType) {
+        case ScrapbookEntryType.photo:
+          file = await _scrapbookService.pickImage();
+          break;
+        case ScrapbookEntryType.video:
+          file = await _scrapbookService.pickVideo();
+          break;
+        case ScrapbookEntryType.audio:
+          file = await _scrapbookService.recordAudio();
+          break;
+        default:
+          file = null;
       }
-    });
+      
+      if (file != null) {
+        setState(() {
+          _selectedMediaFile = file;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error selecting media: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
-  void _saveEntry() {
+  void _saveEntry() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
         _isUploading = true;
       });
 
-      // Simulate uploading
-      Future.delayed(const Duration(seconds: 2), () {
-        // In a real app, this would save to a database
-        
-        // Get the combined date and time
-        final DateTime timestamp = DateTime(
+      try {
+        // Create timestamp from date and time
+        final timestamp = DateTime(
           _selectedDate.year,
           _selectedDate.month,
           _selectedDate.day,
@@ -508,27 +605,106 @@ class _AddScrapbookEntryScreenState extends State<AddScrapbookEntryScreen> {
           _selectedTime.minute,
         );
         
+        // Handle location
         if (_useCurrentLocation) {
-          // Simulate getting current location
+          // In a real app, would get current location here
+          // For this demo, use some default coordinates
           _latitude = 40.7128;
           _longitude = -74.0060;
         }
         
-        // This would create a new entry in a real app
-        final ScrapbookEntry entry = ScrapbookEntry(
-          id: widget.entryToEdit?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
-          title: _titleController.text,
-          content: _contentController.text,
-          type: _selectedType,
-          timestamp: timestamp,
-          latitude: _latitude,
-          longitude: _longitude,
-          mediaUrl: _mediaPath,
-        );
-        
-        // Navigate back when complete
-        Navigator.pop(context);
-      });
+        // Add or update entry
+        if (widget.entryToEdit == null) {
+          // Create new entry
+          final newEntry = await _scrapbookService.addEntry(
+            itineraryId: widget.itinerary.id,
+            title: _titleController.text,
+            content: _contentController.text,
+            type: _selectedType,
+            timestamp: timestamp,
+            latitude: _latitude,
+            longitude: _longitude,
+            mediaFile: _selectedMediaFile,
+          );
+          
+          if (newEntry != null) {
+            // Successfully added
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Memory saved!')),
+              );
+              Navigator.pop(context, true); // Return success
+            }
+          } else {
+            // Error adding
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Error saving memory'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              setState(() {
+                _isUploading = false;
+              });
+            }
+          }
+        } else {
+          // Update existing entry
+          final updatedEntry = ScrapbookEntry(
+            id: widget.entryToEdit!.id,
+            title: _titleController.text,
+            content: _contentController.text,
+            type: _selectedType,
+            timestamp: timestamp,
+            latitude: _latitude,
+            longitude: _longitude,
+            mediaUrl: _isExistingMedia ? _existingMediaPath : null,
+          );
+          
+          final success = await _scrapbookService.updateEntry(
+            itineraryId: widget.itinerary.id,
+            updatedEntry: updatedEntry,
+            newMediaFile: _selectedMediaFile,
+          );
+          
+          if (success) {
+            // Successfully updated
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Memory updated!')),
+              );
+              Navigator.pop(context, true); // Return success
+            }
+          } else {
+            // Error updating
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Error updating memory'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              setState(() {
+                _isUploading = false;
+              });
+            }
+          }
+        }
+      } catch (e) {
+        // Handle errors
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          setState(() {
+            _isUploading = false;
+          });
+        }
+      }
     }
   }
 } 

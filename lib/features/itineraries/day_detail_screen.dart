@@ -251,40 +251,45 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_day.title),
+        title: Text(
+          widget.day.title,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 18,
+          ),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: const Icon(Icons.more_vert),
             onPressed: () {
-              // Edit day functionality
+              _showOptionsMenu(context);
             },
           ),
         ],
       ),
-      body: _isLoading 
+      body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : (_errorMessage != null)
-              ? _buildErrorView()
-              : RefreshIndicator(
-                  onRefresh: _fetchDayDetails,
-                  child: Column(
-                    children: [
-                      _buildDayHeader(),
-                      Expanded(
-                        child: _buildActivitiesList(),
-                      ),
-                    ],
-                  ),
+          : _errorMessage != null && _day == null
+              ? _buildErrorState()
+              : Column(
+                  children: [
+                    _buildDayHeader(),
+                    Expanded(
+                      child: _buildActivitiesList(),
+                    ),
+                  ],
                 ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddActivityDialog,
-        backgroundColor: AppTheme.primaryColor,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _isLoading || (_errorMessage != null && _day == null)
+          ? null
+          : FloatingActionButton(
+              onPressed: _showAddActivityDialog,
+              backgroundColor: AppTheme.primaryColor,
+              child: const Icon(Icons.add),
+            ),
     );
   }
   
-  Widget _buildErrorView() {
+  Widget _buildErrorState() {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -311,16 +316,16 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     final dayNumber = extractDayNumber(_day.title);
     
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppTheme.backgroundColor,
+        color: AppTheme.primaryColor.withOpacity(0.05),
         borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(16),
-          bottomRight: Radius.circular(16),
+          bottomLeft: Radius.circular(20),
+          bottomRight: Radius.circular(20),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(0.03),
             offset: const Offset(0, 2),
             blurRadius: 6,
           ),
@@ -331,11 +336,12 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
         children: [
           Row(
             children: [
+              // Day number badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryColor,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(14),
                 ),
                 child: Text(
                   'Day $dayNumber',
@@ -345,12 +351,12 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
                   ),
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  dateFormat.format(_day.date),
-                  style: AppTheme.labelMedium.copyWith(
-                    color: AppTheme.textSecondaryColor,
+                  _day.title.replaceAll(RegExp(r'Day\s+\d+\s*-?\s*'), ''),
+                  style: AppTheme.headingSmall.copyWith(
+                    color: AppTheme.textPrimaryColor,
                   ),
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -358,39 +364,60 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             ],
           ),
           const SizedBox(height: 12),
+          // Date info
           Row(
             children: [
-              const Icon(
+              Icon(
+                Icons.calendar_today,
+                size: 16,
+                color: AppTheme.secondaryColor,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                dateFormat.format(_day.date),
+                style: AppTheme.bodyMedium.copyWith(
+                  color: AppTheme.textSecondaryColor,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Location info
+          Row(
+            children: [
+              Icon(
                 Icons.location_on,
                 size: 16,
                 color: AppTheme.secondaryColor,
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 8),
               Text(
                 widget.destination,
                 style: AppTheme.bodyMedium.copyWith(
+                  color: AppTheme.textSecondaryColor,
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
+          // Notes section
           if (_day.notes.isNotEmpty) ...[
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: AppTheme.primaryColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: AppTheme.primaryColor.withOpacity(0.3),
+                  color: AppTheme.primaryColor.withOpacity(0.2),
                 ),
               ),
               child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.info_outline,
-                    size: 20,
+                    size: 18,
                     color: AppTheme.primaryColor,
                   ),
                   const SizedBox(width: 8),
@@ -411,14 +438,6 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
 
   Widget _buildActivitiesList() {
     final activities = _day.activities;
-    final timeFormat = DateFormat('h:mm a'); // 10:30 AM
-    
-    // Debug information
-    print('Building activities list with ${activities.length} activities');
-    if (activities.isNotEmpty) {
-      print('First activity: ${activities.first.title}');
-      print('Activity types: ${activities.map((a) => a.type.toString()).join(', ')}');
-    }
     
     if (activities.isEmpty) {
       return Center(
@@ -451,17 +470,13 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
             const SizedBox(height: 24),
             CustomButton(
               text: 'Add First Activity',
-              onPressed: () {
-                // TODO: Implement add activity navigation
-                _showAddActivityDialog();
-              },
+              onPressed: _showAddActivityDialog,
               variant: ButtonVariant.primary,
               iconData: Icons.add,
             ),
-            const SizedBox(height: 16),
-            if (_errorMessage != null) 
+            if (_errorMessage != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 32),
+                padding: const EdgeInsets.all(16.0),
                 child: OutlinedButton.icon(
                   icon: const Icon(Icons.refresh),
                   label: const Text('Refresh'),
@@ -474,25 +489,36 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
     }
     
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Timeline header
+        // Activities header
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          padding: const EdgeInsets.all(16.0),
           child: Row(
             children: [
-              const Icon(Icons.schedule, color: AppTheme.primaryColor, size: 16),
-              const SizedBox(width: 8),
-              Text(
-                'Timeline',
-                style: AppTheme.labelMedium.copyWith(
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.event_note,
                   color: AppTheme.primaryColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Activities',
+                style: AppTheme.headingSmall.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const Spacer(),
               // Activity count badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -509,283 +535,241 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
           ),
         ),
         
+        // Activities list
         Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: activities.length,
-            itemBuilder: (context, index) {
-              final activity = activities[index];
-              final isFirstActivity = index == 0;
-              final isLastActivity = index == activities.length - 1;
-              
-              // Calculate duration
-              final duration = activity.endTime.difference(activity.startTime);
-              final hours = duration.inHours;
-              final minutes = duration.inMinutes % 60;
-              String durationText = '';
-              
-              if (hours > 0) {
-                durationText += '$hours ${hours == 1 ? 'hour' : 'hours'}';
-              }
-              
-              if (minutes > 0) {
-                if (durationText.isNotEmpty) durationText += ' ';
-                durationText += '$minutes ${minutes == 1 ? 'minute' : 'minutes'}';
-              }
-              
-              if (durationText.isEmpty) {
-                durationText = 'Less than a minute';
-              }
-              
-              // Format cost with currency
-              String costText = '';
-              if (activity.cost != null && activity.cost! > 0) {
-                final currencySymbol = _getCurrencySymbol(activity.currency ?? 'USD');
-                costText = '$currencySymbol${activity.cost!.toStringAsFixed(2)}';
-              }
-              
-              return InkWell(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ActivityDetailScreen(
-                        activity: activity,
-                        destination: widget.destination,
-                        dayTitle: _day.title,
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await _fetchDayDetails();
+            },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: activities.length,
+              itemBuilder: (context, index) {
+                final activity = activities[index];
+                return _buildActivityCard(activity);
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActivityCard(Activity activity) {
+    final String activityTypeStr = activity.type.toString();
+    final List<String> activityTags = activityTypeStr.split(',');
+    final hasBookingRef = activity.bookingReference != null && activity.bookingReference!.isNotEmpty;
+    final hasCost = activity.cost != null && activity.cost! > 0;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            offset: const Offset(0, 2),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => ActivityDetailScreen(
+                activity: activity,
+                destination: widget.destination,
+                dayTitle: _day.title,
+              ),
+            ),
+          ).then((_) {
+            // Refresh data when returning from activity detail
+            _fetchDayDetails();
+          });
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Activity header with type indicator
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: _getActivityColor(activity.type).withOpacity(0.1),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _getActivityTypeIcon(activity.type),
+                    color: _getActivityColor(activity.type),
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    _getActivityTypeText(activity.type),
+                    style: AppTheme.labelMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: _getActivityColor(activity.type),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (activity.isBooked)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppTheme.successColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: AppTheme.successColor.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Text(
+                        'Booked',
+                        style: AppTheme.labelSmall.copyWith(
+                          color: AppTheme.successColor,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
-                  ).then((_) {
-                    // Refresh data when returning from activity detail
-                    _fetchDayDetails();
-                  });
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 16),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Timeline
-                      Column(
-                        children: [
-                          Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: isFirstActivity
-                                  ? AppTheme.primaryColor
-                                  : _getActivityColor(activity.type).withOpacity(0.7),
-                              shape: BoxShape.circle,
+                ],
+              ),
+            ),
+            
+            // Activity content
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Title
+                  Text(
+                    activity.title,
+                    style: AppTheme.headingMedium.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  
+                  // Description
+                  if (activity.description.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      activity.description,
+                      style: AppTheme.bodyMedium.copyWith(
+                        color: AppTheme.textSecondaryColor,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  
+                  // Location
+                  if (activity.location.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.location_on_outlined,
+                          size: 18,
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            activity.location,
+                            style: AppTheme.bodyMedium.copyWith(
+                              color: AppTheme.textSecondaryColor,
                             ),
                           ),
-                          if (!isLastActivity)
-                            Container(
-                              width: 2,
-                              height: 100,
-                              color: AppTheme.dividerColor,
+                        ),
+                      ],
+                    ),
+                  ],
+                  
+                  // Cost and booking reference
+                  if (hasCost || hasBookingRef) ...[
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        // Cost
+                        if (hasCost) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.green.shade50,
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                        ],
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
+                            child: Row(
                               children: [
+                                Icon(
+                                  Icons.attach_money,
+                                  size: 16,
+                                  color: Colors.green.shade700,
+                                ),
+                                const SizedBox(width: 4),
                                 Text(
-                                  timeFormat.format(activity.startTime),
+                                  '${activity.cost!.toStringAsFixed(2)} ${activity.currency ?? 'USD'}',
                                   style: AppTheme.labelMedium.copyWith(
-                                    color: AppTheme.primaryColor,
+                                    color: Colors.green.shade700,
                                     fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Text(
-                                  ' - ${timeFormat.format(activity.endTime)}',
-                                  style: AppTheme.labelMedium.copyWith(
-                                    color: AppTheme.textSecondaryColor,
-                                  ),
-                                ),
-                                const Spacer(),
-                                // Activity type indicator
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: _getActivityColor(activity.type).withOpacity(0.2),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        _getActivityTypeIcon(activity.type),
-                                        color: _getActivityColor(activity.type),
-                                        size: 12,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        _getActivityTypeText(activity.type),
-                                        style: TextStyle(
-                                          color: _getActivityColor(activity.type),
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 10,
-                                        ),
-                                      ),
-                                    ],
                                   ),
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 4),
-                            Card(
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          ),
+                        ],
+                        
+                        // Booking reference
+                        if (hasBookingRef) ...[
+                          if (hasCost) const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppTheme.secondaryColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            activity.title,
-                                            style: AppTheme.headingSmall,
-                                          ),
-                                        ),
-                                        if (activity.isBooked)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.successColor.withOpacity(0.2),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Text(
-                                              'Booked',
-                                              style: AppTheme.bodySmall.copyWith(
-                                                color: AppTheme.successColor,
-                                                fontSize: 10,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    if (activity.description.isNotEmpty) ...[
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        activity.description,
-                                        style: AppTheme.bodyMedium,
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.confirmation_number_outlined,
+                                    size: 16,
+                                    color: AppTheme.secondaryColor,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Flexible(
+                                    child: Text(
+                                      activity.bookingReference!,
+                                      style: AppTheme.labelMedium.copyWith(
+                                        color: AppTheme.secondaryColor,
                                       ),
-                                    ],
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        const Icon(
-                                          Icons.timelapse,
-                                          size: 16,
-                                          color: AppTheme.textSecondaryColor,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          durationText,
-                                          style: AppTheme.bodySmall.copyWith(
-                                            color: AppTheme.textSecondaryColor,
-                                          ),
-                                        ),
-                                      ],
+                                      overflow: TextOverflow.ellipsis,
                                     ),
-                                    const SizedBox(height: 8),
-                                    Row(
-                                      children: [
-                                        Expanded(
-                                          child: Row(
-                                            children: [
-                                              const Icon(
-                                                Icons.location_on,
-                                                size: 16,
-                                                color: AppTheme.textSecondaryColor,
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Expanded(
-                                                child: Text(
-                                                  activity.location,
-                                                  style: AppTheme.bodySmall.copyWith(
-                                                    color: AppTheme.textSecondaryColor,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        if (costText.isNotEmpty)
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: AppTheme.primaryColor.withOpacity(0.1),
-                                              borderRadius: BorderRadius.circular(12),
-                                            ),
-                                            child: Text(
-                                              costText,
-                                              style: AppTheme.bodySmall.copyWith(
-                                                color: AppTheme.primaryColor,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                    if (activity.bookingReference != null && activity.bookingReference!.isNotEmpty)
-                                      Container(
-                                        margin: const EdgeInsets.only(top: 8),
-                                        padding: const EdgeInsets.all(8),
-                                        decoration: BoxDecoration(
-                                          color: Colors.grey.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.confirmation_number,
-                                              size: 16,
-                                              color: AppTheme.textSecondaryColor,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Text(
-                                              'Booking: ${activity.bookingReference}',
-                                              style: AppTheme.bodySmall.copyWith(
-                                                color: AppTheme.textSecondaryColor,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -864,15 +848,88 @@ class _DayDetailScreenState extends State<DayDetailScreen> {
   }
 
   void _showAddActivityDialog() {
-    // This is a placeholder method that will show a dialog to add a new activity
-    // In a real implementation, this would navigate to an activity creation screen
+    // This is a placeholder method that will show a dialog for adding a new activity
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Add New Activity',
+                  style: AppTheme.headingMedium.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'This feature will allow you to add a new activity to your day. Currently in development.',
+                  style: AppTheme.bodyMedium,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                      child: Text(
+                        'Cancel',
+                        style: AppTheme.labelMedium.copyWith(
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        // Show a message that this feature is coming soon
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Add activity feature coming soon!'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                      child: const Text('Add Activity'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showOptionsMenu(BuildContext context) {
+    // This is a placeholder method that will show a menu for options
+    // In a real implementation, this would navigate to a menu screen
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add Activity'),
+          title: const Text('Options'),
           content: const Text(
-            'This feature will allow adding new activities to this day. '
+            'This feature will allow you to perform various actions related to this day. '
             'Currently in development.'
           ),
           actions: [

@@ -99,6 +99,7 @@ class StorageKeys {
   static const String lastSyncTime = 'last_sync_time';
   static const String offlineData = 'offline_data';
   static const String language = 'app_language';
+  static const String scrapbookEntries = 'scrapbook_entries';
 }
 
 class RouteNames {

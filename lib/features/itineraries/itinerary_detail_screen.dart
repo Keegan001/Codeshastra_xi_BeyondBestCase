@@ -11,6 +11,8 @@ import 'package:safar/features/itineraries/scrapbook_entry_detail_screen.dart';
 import 'package:safar/services/api_service.dart';
 import 'package:intl/intl.dart';
 
+import 'add_scrapbook_entry_screen.dart';
+
 class ItineraryDetailScreen extends StatefulWidget {
   final Itinerary itinerary;
 
@@ -699,8 +701,6 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> with Sing
   }
 
   Widget _buildScrapbookTab() {
-    final scrapbookEntries = widget.itinerary.scrapbookEntries;
-    
     return Column(
       children: [
         Padding(
@@ -712,10 +712,13 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> with Sing
                 context,
                 MaterialPageRoute(
                   builder: (context) => ScrapbookScreen(
-                    itinerary: widget.itinerary,
+                    itinerary: _itinerary,
                   ),
                 ),
-              );
+              ).then((_) {
+                // Refresh data when returning from scrapbook
+                _loadCompleteItinerary();
+              });
             },
             variant: ButtonVariant.primary,
             iconData: Icons.photo_album,
@@ -723,7 +726,7 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> with Sing
           ),
         ),
         Expanded(
-          child: scrapbookEntries.isEmpty
+          child: _itinerary.scrapbookEntries.isEmpty
               ? Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -755,7 +758,17 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> with Sing
                       CustomButton(
                         text: 'Add First Entry',
                         onPressed: () {
-                          // Add scrapbook entry functionality
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AddScrapbookEntryScreen(
+                                itinerary: _itinerary,
+                              ),
+                            ),
+                          ).then((_) {
+                            // Refresh data when returning from adding an entry
+                            _loadCompleteItinerary();
+                          });
                         },
                         variant: ButtonVariant.primary,
                         iconData: Icons.add_photo_alternate,
@@ -771,9 +784,11 @@ class _ItineraryDetailScreenState extends State<ItineraryDetailScreen> with Sing
                     crossAxisSpacing: 10,
                     mainAxisSpacing: 10,
                   ),
-                  itemCount: scrapbookEntries.length,
+                  itemCount: _itinerary.scrapbookEntries.length > 4 
+                      ? 4 // Show only the first 4 entries in preview
+                      : _itinerary.scrapbookEntries.length,
                   itemBuilder: (context, index) {
-                    final entry = scrapbookEntries[index];
+                    final entry = _itinerary.scrapbookEntries[index];
                     return _buildScrapbookEntryCard(entry);
                   },
                 ),
