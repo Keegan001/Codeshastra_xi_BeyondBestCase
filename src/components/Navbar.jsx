@@ -14,7 +14,8 @@ import {
   Book,
   Info,
   LogIn,
-  UserPlus
+  UserPlus,
+  FileText
 } from 'lucide-react'
 import { Button } from './ui/button'
 import api from '../services/api'
@@ -126,6 +127,10 @@ function Navbar() {
               <Link to="/about" className="hover:text-indigo-200 flex items-center gap-2 group">
                 <Info className="h-5 w-5 group-hover:text-amber-300 transition-colors" />
                 <span>About</span>
+              </Link>
+              <Link to="/travel-documents" className="hover:text-indigo-200 flex items-center gap-2 group">
+                <FileText className="h-5 w-5 group-hover:text-amber-300 transition-colors" />
+                <span>Travel Documents</span>
               </Link>
             </div>
           </div>
@@ -272,6 +277,15 @@ function Navbar() {
             >
               <Info className="h-5 w-5" />
               <span>About</span>
+            </Link>
+            
+            <Link 
+              to="/travel-documents" 
+              className="block py-2 px-3 rounded-lg hover:bg-indigo-500 flex items-center gap-2"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <FileText className="h-5 w-5" />
+              <span>Travel Documents</span>
             </Link>
             
             {isAuthenticated ? (

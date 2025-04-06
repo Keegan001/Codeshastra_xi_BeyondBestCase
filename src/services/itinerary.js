@@ -172,6 +172,8 @@ function createItinerary(formData) {
     },
     generateDays: true,
     source: formData.source || '',
+    sourceLocation: formData.sourceLocation || 'Borivali',
+    numberOfPeople: parseInt(formData.numberOfPeople) || 1,
     budget: {
       currency: formData.currency || 'USD',
       total: parseFloat(formData.budget) || 0

@@ -16,6 +16,7 @@ import ItineraryDetails from './pages/ItineraryDetails'
 import DayPlanner from './pages/DayPlanner'
 import PlaceSearch from './pages/PlaceSearch'
 import ExploreItineraries from './pages/ExploreItineraries'
+import LegalDocsPage from './pages/LegalDocsPage'
 import api from './services/api'
 
 function App() {
@@ -73,6 +74,7 @@ function App() {
             <Route path="itineraries/:id/days/:dayId" element={<DayPlanner />} />
             <Route path="places/search" element={<PlaceSearch />} />
             <Route path="itineraries/explore" element={<ExploreItineraries />} />
+            <Route path="travel-documents" element={<LegalDocsPage />} />
             {/* Additional routes will be added in future phases */}
           </Route>
         </Routes>

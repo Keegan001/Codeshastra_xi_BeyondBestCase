@@ -18,6 +18,8 @@ function CreateItinerary() {
     description: '',
     isPrivate: false,
     source: '',
+    sourceLocation: '',
+    numberOfPeople: 1,
     budget: 0,
     currency: 'USD'
   })
@@ -136,6 +138,24 @@ function CreateItinerary() {
               disabled={isLoading}
             />
           </div>
+          <div className="mb-4">
+            <label 
+              htmlFor="sourceLocation" 
+              className="block text-gray-700 font-medium mb-2"
+            >
+              Source Location*
+            </label>
+            <input
+              type="text"
+              id="sourceLocation"
+              name="sourceLocation"
+              value={formData.sourceLocation}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              required
+              disabled={isLoading}
+            />
+          </div>
           
           <div className="mb-4">
             <label 
@@ -194,6 +214,26 @@ function CreateItinerary() {
                 disabled={isLoading}
               />
             </div>
+          </div>
+          
+          <div className="mb-4">
+            <label 
+              htmlFor="numberOfPeople" 
+              className="block text-gray-700 font-medium mb-2"
+            >
+              Number of People
+            </label>
+            <input
+              type="number"
+              id="numberOfPeople"
+              name="numberOfPeople"
+              value={formData.numberOfPeople}
+              onChange={handleChange}
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              min="1"
+              required
+              disabled={isLoading}
+            />
           </div>
           
           <div className="mb-4">

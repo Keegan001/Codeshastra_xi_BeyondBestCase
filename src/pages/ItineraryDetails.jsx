@@ -10,6 +10,7 @@ import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import BudgetManager from '../components/BudgetManager'
 import CreditCardRecommendations from '../components/CreditCardRecommendations'
+import LegalDocRecommendations from '../components/LegalDocRecommendations'
 import api from '../services/api'
 import AiEditItinerary from '../components/AiEditItinerary'
 axios.defaults.timeout = 100000;
@@ -37,7 +38,8 @@ function ItineraryDetails() {
   const [mapLocations, setMapLocations] = useState([]);
   const [budgetUpdated, setBudgetUpdated] = useState(false);
   const [isAILoading, setIsAILoading] = useState(false); // Renamed local loading state
-
+  
+  const [showTravelDocs, setShowTravelDocs] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showAiEditor, setShowAiEditor] = useState(false);
 
@@ -477,6 +479,46 @@ function ItineraryDetails() {
   // Main JSX return - moved to after all conditional returns
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 relative">
+      {/* Floating Travel Documents Button */}
+      <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-20">
+        <button
+          onClick={() => setShowTravelDocs(!showTravelDocs)}
+          className="flex flex-col items-center justify-center bg-[#56288A] text-white p-3 rounded-full shadow-lg hover:bg-[#4a2178] transition-colors"
+          title="Travel Documents"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          <span className="text-xs mt-1">Docs</span>
+        </button>
+      </div>
+
+      {/* Travel Documents Modal */}
+      {showTravelDocs && itinerary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Travel Documents</h2>
+                <button 
+                  onClick={() => setShowTravelDocs(false)}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <LegalDocRecommendations 
+                source={itinerary.sourceLocation || 'Borivali'} 
+                destination={typeof itinerary.destination === 'object' ? itinerary.destination.name : itinerary.destination} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Suggestions Component */}
       <ItinerarySuggestions itineraryId={id} />
       
