@@ -32,8 +32,8 @@ function CreditCardRecommendations({ destination }) {
           3. Key travel benefits (focus on points, lounge access, travel insurance)
           4. Why it's good for ${destination} specifically
           
-          Format the response as a JSON array of objects with the following structure:
-          [
+          Strictly Format the response as a JSON array of objects with the following structure:
+          "creditCards": [
             {
               "name": "Card Name",
               "annualFee": "$XXX",
@@ -51,15 +51,35 @@ function CreditCardRecommendations({ destination }) {
             contents: prompt,
           });
         
-        const responseText = response;
+        // Get the response text from the appropriate structure
+        // The response object contains candidates array with parts that have the text
+        const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || "";
         
-        // Try to parse the JSON response
+        if (!responseText) {
+          throw new Error("Empty response from Gemini API");
+        } else {
+          console.log(responseText);
+        }
+        
+        // Process the response text - remove markdown code formatting if present
         try {
-          // First attempt: try to parse the entire response
-          const parsedRecommendations = JSON.parse(responseText);
-          setRecommendations(parsedRecommendations);
+          // Remove markdown code blocks if present
+          let cleanedText = responseText.trim();
+          
+          // Remove ```json and ``` that may wrap the JSON content
+          cleanedText = cleanedText.replace(/```json\s*|\s*```/g, '');
+          
+          console.log("Cleaned text:", cleanedText);
+          
+          // Try to parse the entire response as JSON
+          const parsedResponse = JSON.parse(cleanedText);
+          // Extract the credit cards array from the response if it exists
+          const creditCards = parsedResponse.creditCards || parsedResponse;
+          setRecommendations(creditCards);
         } catch (jsonError) {
-          // Second attempt: try to extract JSON from the response
+          console.error("Error parsing cleaned JSON:", jsonError);
+          
+          // If direct parsing still fails, try to extract JSON from the response
           try {
             const jsonStart = responseText.indexOf('[');
             const jsonEnd = responseText.lastIndexOf(']') + 1;
@@ -69,7 +89,22 @@ function CreditCardRecommendations({ destination }) {
               const parsedRecommendations = JSON.parse(jsonString);
               setRecommendations(parsedRecommendations);
             } else {
-              throw new Error("Could not find JSON array in response");
+              // Try to find the creditCards property instead
+              const creditCardsStart = responseText.indexOf('"creditCards":');
+              if (creditCardsStart >= 0) {
+                const objectStart = responseText.indexOf('[', creditCardsStart);
+                const objectEnd = responseText.lastIndexOf(']') + 1;
+                
+                if (objectStart >= 0 && objectEnd > objectStart) {
+                  const jsonString = responseText.substring(objectStart, objectEnd);
+                  const parsedRecommendations = JSON.parse(jsonString);
+                  setRecommendations(parsedRecommendations);
+                } else {
+                  throw new Error("Could not find creditCards array in response");
+                }
+              } else {
+                throw new Error("Could not find JSON array in response");
+              }
             }
           } catch (extractError) {
             console.error("Error parsing JSON from response:", extractError);
@@ -118,7 +153,7 @@ function CreditCardRecommendations({ destination }) {
       </h3>
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {recommendations.map((card, index) => (
+        {Array.isArray(recommendations) ? recommendations.map((card, index) => (
           <Card key={index} className="p-4 hover:shadow-lg transition-shadow">
             <h4 className="text-lg font-semibold mb-2 text-[#56288A]">{card.name}</h4>
             <p className="text-sm font-medium text-gray-700 mb-3">Annual Fee: {card.annualFee}</p>
@@ -135,7 +170,7 @@ function CreditCardRecommendations({ destination }) {
               <p className="text-sm text-gray-600">{card.destinationValue}</p>
             </div>
           </Card>
-        ))}
+        )) : <p>No credit card recommendations available.</p>}
       </div>
     </div>
   );
