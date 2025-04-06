@@ -9,6 +9,7 @@ import ItinerarySuggestions from '../components/ItinerarySuggestions'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import BudgetManager from '../components/BudgetManager'
+import CreditCardRecommendations from '../components/CreditCardRecommendations'
 import api from '../services/api'
 import AiEditItinerary from '../components/AiEditItinerary'
 axios.defaults.timeout = 100000;
@@ -885,6 +886,25 @@ function ItineraryDetails() {
                 onUpdate={handleBudgetUpdate}
                 isEditorRole={isUserOwnerOrEditor()}
               />
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Credit Card Recommendations */}
+      {itinerary && destinationName && (
+        <div className="mb-8">
+          <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="border-b border-gray-200 px-6 py-4">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                </svg>
+                Travel Credit Cards
+              </h2>
+            </div>
+            <div className="p-6">
+              <CreditCardRecommendations destination={destinationName} />
             </div>
           </div>
         </div>
