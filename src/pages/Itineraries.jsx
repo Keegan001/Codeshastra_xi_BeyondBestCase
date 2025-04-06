@@ -238,49 +238,203 @@ function Itineraries() {
                   </div>
                   
                   {/* Journey visualization with source and destination */}
-                  <div className="bg-gray-50 p-4 rounded-xl mb-5">
-                    <div className="relative px-2 mt-10">
-                      {/* Source to destination line */}
-                      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-green-500 to-red-500 transform -translate-y-1/2"></div>
+                  <motion.div 
+                    className="bg-gradient-to-b from-white to-gray-50 p-5 rounded-xl mb-5 border border-gray-100 shadow-sm"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.1, duration: 0.4 }}
+                    whileHover={{ boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)" }}
+                  >
+                    <div className="relative px-5 py-2">
+                      {/* Source to destination line with animated gradient */}
+                      <motion.div 
+                        className="absolute top-1/2 left-0 right-0 h-1 rounded-full bg-gradient-to-r from-green-500 via-[#56288A] to-red-500 transform -translate-y-1/2"
+                        initial={{ scaleX: 0, opacity: 0 }}
+                        animate={{ scaleX: 1, opacity: 1 }}
+                        transition={{ duration: 1, delay: 0.3 }}
+                      />
+                      
+                      {/* Animated dots along the path */}
+                      <motion.div 
+                        className="absolute top-1/2 left-1/4 w-2 h-2 bg-[#56288A] rounded-full transform -translate-y-1/2 z-20"
+                        animate={{ 
+                          x: ["0%", "300%"],
+                          opacity: [0, 1, 0],
+                        }}
+                        transition={{ 
+                          duration: 3, 
+                          repeat: Infinity,
+                          repeatType: "loop", 
+                          ease: "easeInOut",
+                          times: [0, 0.5, 1]
+                        }}
+                      />
                       
                       {/* Journey details with dots */}
-                      <div className="flex justify-between items-center relative z-10">
+                      <div className="flex justify-between items-center relative z-10 mb-8">
                         {/* Source (departure) */}
-                        <div className="flex flex-col items-center">
-                          <div className="w-4 h-4 rounded-full bg-green-500 mb-1 shadow-md"></div>
-                          <span className="text-xs font-medium text-gray-600 truncate mt-20">
-                            {itinerary.origin?.name || itinerary.origin || 'Departure'}
-                          </span>
-                          <span className="text-[10px] text-gray-500">
-                            {new Date(itinerary.dateRange?.start || itinerary.startDate).toLocaleDateString(undefined, {day: 'numeric', month: 'short'})}
-                          </span>
-                        </div>
+                        <motion.div 
+                          className="flex flex-col items-center"
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          <motion.div 
+                            className="w-6 h-6 rounded-full bg-green-500 mb-1 shadow-md flex items-center justify-center"
+                            whileHover={{ scale: 1.2 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                          >
+                            <motion.svg 
+                              xmlns="http://www.w3.org/2000/svg" 
+                              className="h-3 w-3 text-white" 
+                              fill="none" 
+                              viewBox="0 0 24 24" 
+                              stroke="currentColor"
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 0.6 }}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                            </motion.svg>
+                          </motion.div>
+                          <motion.div
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 }}
+                            className="flex flex-col items-center"
+                          >
+                            <span className="text-xs font-medium text-[#56288A] truncate max-w-[80px] text-center">
+                              {itinerary.origin?.name || itinerary.origin || 'Departure'}
+                            </span>
+                          </motion.div>
+                        </motion.div>
                         
                         {/* Travel icon */}
-                        <div className="bg-white p-1.5 rounded-full shadow-md">
-                          <PlaneTakeoff className="h-4 w-4 text-[#56288A]" />
-                        </div>
+                        <motion.div 
+                          className="bg-white p-2 rounded-full shadow-md z-20"
+                          initial={{ y: 20, opacity: 0 }}
+                          animate={{ y: 0, opacity: 1 }}
+                          transition={{ delay: 0.4, duration: 0.5 }}
+                          whileHover={{ 
+                            scale: 1.2,
+                            rotate: 10,
+                            boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)" 
+                          }}
+                        >
+                          <motion.div
+                            animate={{ 
+                              x: ["-10%", "10%"],
+                              y: ["-10%", "10%"]
+                            }}
+                            transition={{ 
+                              duration: 2,
+                              repeat: Infinity,
+                              repeatType: "reverse", 
+                              ease: "easeInOut" 
+                            }}
+                          >
+                            <PlaneTakeoff className="h-5 w-5 text-[#56288A]" />
+                          </motion.div>
+                        </motion.div>
                         
                         {/* Destination */}
-                        <div className="flex flex-col items-center">
-                          <div className="w-4 h-4 rounded-full bg-red-500 mb-1 shadow-md"></div>
-                          <span className="text-xs font-medium text-gray-600 max-w-[100px] mt-20 truncate">
-                            {itinerary.destination?.name || itinerary.destination || 'Destination'}
+                        <motion.div 
+                          className="flex flex-col items-center"
+                          initial={{ opacity: 0, x: 10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.5 }}
+                        >
+                          <motion.div 
+                            className="w-6 h-6 rounded-full bg-red-500 mb-1 shadow-md flex items-center justify-center"
+                            whileHover={{ scale: 1.2 }}
+                            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                          >
+                            <motion.svg 
+                              xmlns="http://www.w3.org/2000/svg" 
+                              className="h-3 w-3 text-white" 
+                              fill="none" 
+                              viewBox="0 0 24 24" 
+                              stroke="currentColor"
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              transition={{ delay: 0.6 }}
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </motion.svg>
+                          </motion.div>
+                          <motion.div
+                            initial={{ opacity: 0, y: 5 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.4 }}
+                            className="flex flex-col items-center"
+                          >
+                            <span className="text-xs font-medium text-[#56288A] max-w-[80px] text-center truncate">
+                              {itinerary.destination?.name || itinerary.destination || 'Destination'}
+                            </span>
+                          </motion.div>
+                        </motion.div>
+                      </div>
+                      
+                      {/* Dates display - moved below the locations */}
+                      <div className="flex justify-between items-center px-2 mt-1">
+                        <motion.div
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.6 }}
+                          className="flex items-center"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-[10px] text-gray-500 font-medium">
+                            {new Date(itinerary.dateRange?.start || itinerary.startDate).toLocaleDateString(undefined, {day: 'numeric', month: 'short'})}
                           </span>
-                          <span className="text-[10px] text-gray-500">
+                        </motion.div>
+                        
+                        <motion.div
+                          initial={{ opacity: 0, y: 5 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.7 }}
+                          className="flex items-center"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 mr-1 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                          <span className="text-[10px] text-gray-500 font-medium">
                             {new Date(itinerary.dateRange?.end || itinerary.endDate).toLocaleDateString(undefined, {day: 'numeric', month: 'short'})}
                           </span>
-                        </div>
+                        </motion.div>
                       </div>
                       
                       {/* Journey duration */}
-                      <div className="flex justify-center mt-3">
-                        <span className="text-xs bg-[#56288A]/10 text-[#56288A] px-2 py-0.5 rounded-full font-medium">
+                      <motion.div 
+                        className="flex justify-center mt-4"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.8 }}
+                      >
+                        <motion.span 
+                          className="text-xs bg-[#56288A]/10 text-[#56288A] px-3 py-1 rounded-full font-medium flex items-center"
+                          whileHover={{ 
+                            scale: 1.05,
+                            backgroundColor: "rgba(86, 40, 138, 0.2)"
+                          }}
+                        >
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className="h-3 w-3 mr-1" 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
                           {itinerary.days?.length || 0} {itinerary.days?.length === 1 ? 'Day' : 'Days'}
-                        </span>
-                      </div>
+                        </motion.span>
+                      </motion.div>
                     </div>
-                  </div>
+                  </motion.div>
                   
                   <div className="flex justify-between mt-6">
                     <motion.div

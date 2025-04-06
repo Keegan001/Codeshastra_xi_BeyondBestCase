@@ -13,6 +13,7 @@ import CreditCardRecommendations from '../components/CreditCardRecommendations'
 import LegalDocRecommendations from '../components/LegalDocRecommendations'
 import api from '../services/api'
 import AiEditItinerary from '../components/AiEditItinerary'
+import { motion } from 'framer-motion'
 axios.defaults.timeout = 100000;
 
 function ItineraryDetails() {
@@ -479,17 +480,30 @@ function ItineraryDetails() {
   // Main JSX return - moved to after all conditional returns
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 relative">
-      {/* Floating Travel Documents Button */}
-      <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-20">
+      {/* Back button at the top */}
+      <div className="mb-6">
+        <Link to="/itineraries" className="text-[#56288A] hover:text-[#864BD8] flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+          </svg>
+          Back to Itineraries
+        </Link>
+      </div>
+
+      {/* Fixed Floating Buttons */}
+      <div className="fixed left-4 top-1/2 transform -translate-y-1/2 z-20 flex flex-col gap-4">
+        {/* Tip Button (Placeholder) */}
+        
+        {/* Travel Documents Button */}
         <button
           onClick={() => setShowTravelDocs(!showTravelDocs)}
-          className="flex flex-col items-center justify-center bg-[#56288A] text-white p-3 rounded-full shadow-lg hover:bg-[#4a2178] transition-colors"
+          className="flex flex-col items-center justify-center bg-gradient-to-br from-[#56288A] to-[#864BD8] text-white p-3 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
           title="Travel Documents"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
-          <span className="text-xs mt-1">Docs</span>
+          <span className="text-xs font-medium mt-1">Docs</span>
         </button>
       </div>
 
@@ -498,17 +512,26 @@ function ItineraryDetails() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Travel Documents</h2>
+              <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
+                <h2 className="text-xl font-bold text-[#56288A] flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Travel Documents Required
+                </h2>
                 <button 
                   onClick={() => setShowTravelDocs(false)}
-                  className="text-gray-500 hover:text-gray-700"
+                  className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-1.5 rounded-full transition-colors"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
+              
+              <p className="text-gray-600 mb-4">
+                Here are the essential travel documents required when traveling from {itinerary.sourceLocation || 'Borivali'} to {typeof itinerary.destination === 'object' ? itinerary.destination.name : itinerary.destination}.
+              </p>
               
               <LegalDocRecommendations 
                 source={itinerary.sourceLocation || 'Borivali'} 
@@ -596,13 +619,56 @@ function ItineraryDetails() {
           </div>
         ) : (
           <div className="bg-white shadow-md rounded-lg p-6 mb-4">
-            <div className="flex justify-between items-start mb-2">
-              <h1 className="text-2xl font-bold text-gray-800">{itinerary?.title}</h1>
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-2">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-4">
+                  <h1 className="text-2xl font-bold text-gray-800">{itinerary?.title}</h1>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    editData.isPrivate 
+                      ? 'bg-red-100 text-red-800' 
+                      : 'bg-green-100 text-green-800'
+                  }`}>
+                    {editData.isPrivate ? 'Private' : 'Public'}
+                  </span>
+                  {isUserOwnerOrEditor() && !isEditing && (
+                    <button 
+                      onClick={handleTogglePrivacy}
+                      className="text-sm text-[#56288A] hover:text-[#864BD8]"
+                    >
+                      {editData.isPrivate ? 'Make Public' : 'Make Private'}
+                    </button>
+                  )}
+                </div>
+                {itinerary?.description && (
+                  <p className="text-gray-600 mt-2">{itinerary.description}</p>
+                )}
+              </div>
+              {isUserOwnerOrEditor() && (
+                <div className="flex space-x-2">
+                  <button
+                    onClick={() => setIsEditMode(true)}
+                    className="bg-[#56288A] text-white px-4 py-2 rounded-lg hover:bg-[#864BD8] flex items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                    Edit
+                  </button>
+                  {isUserOwner() && (
+                    <button
+                      onClick={handleDelete}
+                      className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      Delete
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
-            {itinerary?.description && (
-              <p className="text-gray-600 mb-4">{itinerary.description}</p>
-            )}
-            <div className="flex flex-wrap items-center text-sm text-gray-600 gap-4">
+            <div className="flex flex-wrap items-center text-sm text-gray-600 gap-4 mt-4">
               <div className="flex items-center">
                 <i className="fas fa-map-marker-alt text-red-500 mr-2"></i>
                 <span>{destinationName}</span>
@@ -611,271 +677,60 @@ function ItineraryDetails() {
                 <i className="fas fa-calendar mr-2"></i>
                 <span>{formattedStartDate} - {formattedEndDate}</span>
               </div>
-              {itinerary?.isPrivate ? (
-                <div className="flex items-center">
-                  <i className="fas fa-lock text-gray-500 mr-2"></i>
-                  <span>Private</span>
-                </div>
-              ) : (
-                <div className="flex items-center">
-                  <i className="fas fa-globe text-gray-500 mr-2"></i>
-                  <span>Public</span>
-                </div>
-              )}
             </div>
-          </div>
-        )}
-        
-        {/* Editing tools */}
-        {isUserOwnerOrEditor() && (
-          <div className="mb-6">
-            <div className="flex flex-wrap gap-4 items-center">
-              <button
-                onClick={() => setIsEditMode(!isEditMode)}
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 flex items-center gap-2"
-              >
-                <i className={`fas fa-${isEditMode ? 'times' : 'edit'}`}></i>
-                {isEditMode ? 'Cancel Edit' : 'Edit Details'}
-              </button>
-
-              {isUserOwner() && (
-                <button
-                  onClick={handleDelete}
-                  className="bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 flex items-center gap-2"
-                >
-                  <i className="fas fa-trash"></i>
-                  Delete
-                </button>
-              )}
-              
-              {/* AI Edit button that toggles the AI editor visibility */}
-              <button
-                onClick={() => setShowAiEditor(!showAiEditor)}
-                className="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 flex items-center gap-2"
-              >
-                <i className="fas fa-magic"></i>
-                {showAiEditor ? 'Hide AI Editor' : 'AI Edit Itinerary'}
-              </button>
-            </div>
-            
-            {/* AI Edit Itinerary section - Display if showAiEditor is true */}
-            {showAiEditor && (
-              <div className="mt-4">
-                <AiEditItinerary itineraryId={id} />
-              </div>
-            )}
           </div>
         )}
       </div>
       
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <div className="flex items-center">
-          <Link to="/itineraries" className="mr-4 text-[#56288A] hover:text-[#864BD8] flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+      {/* Action buttons in one row */}
+      <div className="mb-6 flex flex-wrap justify-between items-center">
+        <div className="flex flex-wrap gap-3 items-center">
+          {/* Show Route Map button */}
+          <button
+            type="button"
+            onClick={() => setShowMap(!showMap)}
+            className="flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-[#56288A] hover:text-[#864BD8] hover:bg-gray-50 transition-colors"
+          >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className="h-5 w-5 mr-2" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
             </svg>
-            Back to Itineraries
-          </Link>
-          <div>
-            {isEditing ? (
-              <input
-                type="text"
-                name="title"
-                value={editData.title}
-                onChange={handleEditChange}
-                className="text-3xl font-bold border-b-2 border-[#56288A] focus:outline-none"
-                disabled={isAILoading}
-              />
-            ) : (
-              <h1 className="text-3xl font-bold">{itinerary?.title}</h1>
-            )}
-            
-            {/* Privacy Indicator */}
-            <div className="flex items-center mt-2">
-              <span className={`px-2 py-1 text-xs rounded-full ${
-                editData.isPrivate 
-                  ? 'bg-red-100 text-red-800' 
-                  : 'bg-green-100 text-green-800'
-              }`}>
-                {editData.isPrivate ? 'Private' : 'Public'}
-              </span>
-              
-              {isUserOwnerOrEditor() && !isEditing && (
-                <button 
-                  onClick={handleTogglePrivacy}
-                  className="ml-2 text-sm text-[#56288A] hover:text-[#864BD8]"
-                >
-                  {editData.isPrivate ? 'Make Public' : 'Make Private'}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-        <div className="flex space-x-2">
-          {isEditing ? (
-            <>
-              <button
-                onClick={handleSave}
-                className="bg-[#56288A] text-white px-4 py-2 rounded-lg hover:bg-[#864BD8] disabled:bg-[#56288A]/60 flex items-center"
-                disabled={isAILoading}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-                Save
-              </button>
-              <button
-                onClick={() => setIsEditing(false)}
-                className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 disabled:bg-gray-100 flex items-center"
-                disabled={isAILoading}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                </svg>
-                Cancel
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                onClick={() => setIsEditing(true)}
-                className="bg-[#56288A] text-white px-4 py-2 rounded-lg hover:bg-[#864BD8] flex items-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                </svg>
-                Edit
-              </button>
-              <button
-                onClick={handleDelete}
-                className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-                Delete
-              </button>
-            </>
+            {showMap ? "Hide Route Map" : "Show Route Map"} 
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              className={`h-5 w-5 ml-1 transition-transform ${showMap ? 'transform rotate-180' : ''}`} 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+          
+          {/* AI Edit Itinerary button */}
+          {isUserOwnerOrEditor() && (
+            <button
+              onClick={() => setShowAiEditor(!showAiEditor)}
+              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
+            >
+              <i className="fas fa-magic"></i>
+              {showAiEditor ? 'Hide AI Editor' : 'AI Edit Itinerary'}
+            </button>
           )}
         </div>
       </div>
       
-      <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-        <div className="p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <h3 className="text-gray-600 text-sm font-medium uppercase tracking-wider mb-2">Destination</h3>
-              {isEditing ? (
-                <input
-                  type="text"
-                  name="destination"
-                  value={editData.destination}
-                  onChange={handleEditChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#56288A]"
-                  disabled={isAILoading}
-                />
-              ) : (
-                <p className="text-lg font-medium">{destinationName}</p>
-              )}
-            </div>
-            
-            <div>
-              <h3 className="text-gray-600 text-sm font-medium uppercase tracking-wider mb-2">Dates</h3>
-              {isEditing ? (
-                <div className="flex space-x-2">
-                  <input
-                    type="date"
-                    name="startDate"
-                    value={editData.startDate}
-                    onChange={handleEditChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#56288A]"
-                    disabled={isAILoading}
-                  />
-                  <span className="flex items-center">to</span>
-                  <input
-                    type="date"
-                    name="endDate"
-                    value={editData.endDate}
-                    onChange={handleEditChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#56288A]"
-                    disabled={isAILoading}
-                  />
-                </div>
-              ) : (
-                <p className="text-lg font-medium">
-                  {formattedStartDate} - {formattedEndDate}
-                </p>
-              )}
-            </div>
-          </div>
-          
-          <div className="mb-6">
-            <h3 className="text-gray-600 text-sm font-medium uppercase tracking-wider mb-2">Description</h3>
-            {isEditing ? (
-              <textarea
-                name="description"
-                value={editData.description}
-                onChange={handleEditChange}
-                rows="3"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#56288A]"
-                disabled={isAILoading}
-              ></textarea>
-            ) : (
-              <p className="text-gray-700 leading-relaxed">{itinerary?.description || 'No description provided.'}</p>
-            )}
-          </div>
-          
-          {isEditing && (
-            <div className="mb-6">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="isPrivate"
-                  name="isPrivate"
-                  checked={editData.isPrivate}
-                  onChange={handleEditChange}
-                  className="h-4 w-4 text-[#56288A] focus:ring-[#56288A] border-gray-300 rounded"
-                  disabled={isAILoading}
-                />
-                <label 
-                  htmlFor="isPrivate" 
-                  className="ml-2 text-gray-700"
-                >
-                  Private itinerary
-                </label>
-              </div>
-            </div>
-          )}
+      {/* AI Edit Itinerary section - Display if showAiEditor is true */}
+      {showAiEditor && (
+        <div className="mb-6 bg-white shadow-sm rounded-lg p-5 border border-purple-100">
+          <AiEditItinerary itineraryId={id} />
         </div>
-      </div>
-      
-      <div className="mb-6">
-        <button
-          type="button"
-          onClick={() => setShowMap(!showMap)}
-          className="flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-[#56288A] hover:text-[#864BD8] hover:bg-gray-50 transition-colors"
-        >
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            className="h-5 w-5 mr-2" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-          </svg>
-          {showMap ? "Hide Route Map" : "Show Route Map"} 
-          <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            className={`h-5 w-5 ml-1 transition-transform ${showMap ? 'transform rotate-180' : ''}`} 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
-      </div>
+      )}
       
       {showMap && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -913,21 +768,25 @@ function ItineraryDetails() {
       {itinerary && (
         <div className="mb-8">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="border-b border-gray-200 px-6 py-4">
+            <div className="border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-[#56288A]/5 to-[#864BD8]/5">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 Budget Management
               </h2>
             </div>
-            <div className="p-6">
-              <BudgetManager 
-                itineraryId={id} 
-                budget={itinerary.budget}
-                onUpdate={handleBudgetUpdate}
-                isEditorRole={isUserOwnerOrEditor()}
-              />
+            <div className="p-6 rounded-b-lg bg-gradient-to-br from-white to-purple-50">
+              <div className="max-w-full mx-auto">
+                <div className="bg-white border border-purple-100 rounded-lg p-5 shadow-sm">
+                  <BudgetManager 
+                    itineraryId={id} 
+                    budget={itinerary.budget}
+                    onUpdate={handleBudgetUpdate}
+                    isEditorRole={isUserOwnerOrEditor()}
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -937,9 +796,9 @@ function ItineraryDetails() {
       {itinerary && destinationName && (
         <div className="mb-8">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="border-b border-gray-200 px-6 py-4">
+            <div className="border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-[#56288A]/5 to-[#864BD8]/5">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                 </svg>
                 Travel Credit Cards
@@ -956,9 +815,9 @@ function ItineraryDetails() {
       {itinerary && (
         <div className="mb-8">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="border-b border-gray-200 px-6 py-4">
+            <div className="border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-[#56288A]/5 to-[#864BD8]/5">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                 </svg>
                 Trip Members
@@ -974,118 +833,210 @@ function ItineraryDetails() {
         </div>
       )}
       
-      <div className="mb-6">
-        <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+      {/* Daily Plan section */}
+      <motion.div 
+        className="mb-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <motion.h2 
+            className="text-2xl font-bold text-gray-800 flex items-center"
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.4 }}
+          >
+            <motion.div
+              initial={{ rotate: -10, scale: 0.9 }}
+              animate={{ rotate: 0, scale: 1 }}
+              transition={{ delay: 0.4, duration: 0.3 }}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </motion.div>
             Daily Plan
-          </h2>
-          <div className="flex space-x-2">
-            <button
+          </motion.h2>
+          <motion.div 
+            className="flex space-x-2"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+          >
+            <motion.button
               onClick={handleRenumberDays}
-              className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 disabled:bg-green-400 flex items-center"
+              className="bg-gradient-to-r from-green-600 to-green-500 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-green-600 disabled:opacity-60 flex items-center shadow-md"
               disabled={isLoading || (!itinerary?.days || itinerary.days.length < 2)}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
               </svg>
               Renumber Days
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               onClick={generateInitialDays}
-              className="bg-[#56288A] text-white px-4 py-2 rounded-lg hover:bg-[#864BD8] disabled:bg-[#56288A]/60 flex items-center"
+              className="bg-gradient-to-r from-[#56288A] to-[#864BD8] text-white px-4 py-2 rounded-lg hover:from-[#6b339e] hover:to-[#9562e6] disabled:opacity-60 flex items-center shadow-md"
               disabled={isAILoading}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
               Generate with AI
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               onClick={handleAddDay}
-              className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 disabled:bg-gray-100 flex items-center"
+              className="bg-white border border-gray-300 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-60 flex items-center shadow-sm"
               disabled={isAILoading}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ duration: 0.2 }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Add Day
-            </button>
-          </div>
+            </motion.button>
+          </motion.div>
         </div>
-      </div>
       
-      {(!itinerary?.days || itinerary.days.length === 0) ? (
-        <div className="bg-white rounded-lg shadow-md p-8 text-center mb-8">
-          <div className="inline-block p-4 bg-gray-100 rounded-full mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-          </div>
-          <h3 className="text-xl font-medium text-gray-800 mb-4">No Days Added Yet</h3>
-          <p className="text-gray-600 mb-6 max-w-md mx-auto">
-            Start planning your trip by generating days with AI or adding them manually to your itinerary.
-          </p>
-          <div className="flex justify-center space-x-3">
-            <button
-              onClick={generateInitialDays}
-              className="bg-[#56288A] text-white px-6 py-2 rounded-lg hover:bg-[#864BD8] flex items-center"
+        {(!itinerary?.days || itinerary.days.length === 0) ? (
+          <motion.div 
+            className="bg-white rounded-xl shadow-lg p-8 text-center mb-8 border border-gray-100"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <motion.div 
+              className="inline-block p-4 bg-indigo-50 rounded-full mb-4"
+              initial={{ scale: 0 }}
+              animate={{ scale: 1, rotate: [0, 10, 0] }}
+              transition={{ delay: 0.6, duration: 0.5, type: "spring" }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-              Generate with AI
-            </button>
-            <button
-              onClick={handleAddDay}
-              className="bg-gray-200 text-gray-800 px-6 py-2 rounded-lg hover:bg-gray-300 flex items-center"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
-              Add Day
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-          <ul className="divide-y divide-gray-200">
-            {itinerary.days
-              .slice() // Create a copy to avoid mutating the original array
-              .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sort by date
-              .map((day, index) => (
-                <li key={day.id} className="group hover:bg-gray-50 transition-colors">
-                  <Link 
-                    to={`/itineraries/${id}/days/${day.id}`}
-                    className="block p-6"
+            </motion.div>
+            <motion.h3 
+              className="text-xl font-medium text-gray-800 mb-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7, duration: 0.3 }}
+            >
+              No Days Added Yet
+            </motion.h3>
+            <motion.p 
+              className="text-gray-600 mb-6 max-w-md mx-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8, duration: 0.3 }}
+            >
+              Start planning your trip by generating days with AI or adding them manually to your itinerary.
+            </motion.p>
+            <motion.div 
+              className="flex justify-center space-x-3"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9, duration: 0.3 }}
+            >
+              <motion.button
+                onClick={generateInitialDays}
+                className="bg-gradient-to-r from-[#56288A] to-[#864BD8] text-white px-6 py-2 rounded-lg flex items-center shadow-md"
+                whileHover={{ scale: 1.05, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                Generate with AI
+              </motion.button>
+              <motion.button
+                onClick={handleAddDay}
+                className="bg-white border border-gray-300 text-gray-800 px-6 py-2 rounded-lg flex items-center shadow-sm"
+                whileHover={{ scale: 1.05, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                Add Day
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        ) : (
+          <motion.div 
+            className="bg-white rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-100"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+          >
+            <ul className="divide-y divide-gray-200">
+              {itinerary.days
+                .slice() // Create a copy to avoid mutating the original array
+                .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sort by date
+                .map((day, index) => (
+                  <motion.li 
+                    key={day.id} 
+                    className="group hover:bg-gradient-to-r hover:from-indigo-50/50 hover:to-purple-50/50 transition-all duration-300"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 + index * 0.1, duration: 0.4 }}
+                    whileHover={{ scale: 1.01 }}
                   >
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h3 className="text-lg font-medium text-gray-800 group-hover:text-[#56288A]">Day {index + 1}</h3>
-                        <p className="text-gray-600">
-                          {new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                        </p>
+                    <Link 
+                      to={`/itineraries/${id}/days/${day.id}`}
+                      className="block p-6"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center">
+                          <motion.div 
+                            className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mr-4 text-[#56288A] font-bold text-lg"
+                            whileHover={{ scale: 1.1, rotate: 5 }}
+                          >
+                            {index + 1}
+                          </motion.div>
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-800 group-hover:text-[#56288A]">
+                              Day {index + 1}
+                            </h3>
+                            <p className="text-gray-600 flex items-center mt-1">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              {new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <span className="flex items-center bg-indigo-50 px-3 py-1 rounded-full text-[#56288A] mr-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            </svg>
+                            {day.activities?.length || 0} Activities
+                          </span>
+                          <motion.div 
+                            className="h-8 w-8 flex items-center justify-center rounded-full bg-white shadow-sm group-hover:bg-[#56288A] group-hover:text-white transition-all duration-300"
+                            whileHover={{ scale: 1.2, rotate: 90 }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 group-hover:text-white" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </motion.div>
+                        </div>
                       </div>
-                      <div className="flex items-center">
-                        <span className="flex items-center text-gray-600 mr-2">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-                          </svg>
-                          {day.activities?.length || 0} Activities
-                        </span>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-400 group-hover:text-[#56288A] transition-colors" viewBox="0 0 20 20" fill="currentColor">
-                          <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                    </div>
-                  </Link>
-                </li>
-              ))}
-          </ul>
-        </div>
-      )}
+                    </Link>
+                  </motion.li>
+                ))}
+            </ul>
+          </motion.div>
+        )}
+      </motion.div>
     </div>
   )
 }
