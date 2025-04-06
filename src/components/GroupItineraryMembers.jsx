@@ -252,7 +252,7 @@ function GroupItineraryMembers({ itinerary, isOwner }) {
               </select>
               <button
                 type="submit"
-                className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 disabled:bg-indigo-300"
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 disabled:bg-indigo-300"
                 disabled={isAdding}
               >
                 {isAdding ? 'Adding...' : 'Add'}

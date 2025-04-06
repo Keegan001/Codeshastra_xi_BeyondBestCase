@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 
-function ItinerarySuggestions({ itineraryId }) {
-  const [isOpen, setIsOpen] = useState(false)
+function ItinerarySuggestions({ itineraryId, isOpen, setIsOpen }) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState(null)
   const [suggestions, setSuggestions] = useState(null)
+
+  // Use effect to fetch suggestions when isOpen changes to true
+  useEffect(() => {
+    if (isOpen && !suggestions) {
+      fetchSuggestions();
+    }
+  }, [isOpen]);
 
   const toggleSuggestions = () => {
     if (!suggestions && !isOpen) {
@@ -68,17 +74,6 @@ function ItinerarySuggestions({ itineraryId }) {
 
   return (
     <div className="relative">
-      {/* Toggle Button */}
-      <button
-        onClick={toggleSuggestions}
-        className="fixed left-4 top-32 z-40 bg-indigo-600 text-white p-3 rounded-full shadow-lg hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        title="View Suggestions"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-        </svg>
-      </button>
-
       {/* Suggestions Drawer */}
       {isOpen && (
         <div className="fixed inset-0 z-50 overflow-hidden" aria-labelledby="slide-over-title" role="dialog" aria-modal="true">
