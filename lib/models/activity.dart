@@ -20,6 +20,7 @@ class Activity {
   final String location;
   final String? imageUrl;
   final double? cost;
+  final String? currency;
   final bool isBooked;
   final String? bookingReference;
   final double? latitude;
@@ -35,53 +36,216 @@ class Activity {
     required this.location,
     this.imageUrl,
     this.cost,
+    this.currency = 'USD',
     this.isBooked = false,
     this.bookingReference,
     this.latitude,
     this.longitude,
   });
 
-  // Create from JSON
+  // Convert from JSON
   static Activity fromJson(Map<String, dynamic> json) {
+    // Convert backend activity type to frontend ActivityType
+    ActivityType getActivityTypeFromBackend(dynamic backendType) {
+      if (backendType == null) return ActivityType.leisure;
+      
+      switch (backendType.toString().toLowerCase()) {
+        case 'attraction':
+          return ActivityType.attraction;
+        case 'food':
+        case 'dining':
+          return ActivityType.dining;
+        case 'transport':
+        case 'transportation':
+          return ActivityType.transportation;
+        case 'accommodation':
+          return ActivityType.accommodation;
+        case 'event':
+          return ActivityType.event;
+        case 'leisure':
+        case 'other':
+          return ActivityType.leisure;
+        default:
+          print('Unknown activity type: $backendType, defaulting to leisure');
+          return ActivityType.leisure;
+      }
+    }
+
+    // Parse time fields safely
+    DateTime parseTimeField(dynamic timeValue, DateTime defaultTime) {
+      if (timeValue == null) return defaultTime;
+      
+      try {
+        if (timeValue is String) {
+          return DateTime.parse(timeValue);
+        } else if (timeValue is Map && timeValue.containsKey('start')) {
+          return DateTime.parse(timeValue['start']);
+        }
+      } catch (e) {
+        print('Error parsing time: $e for value $timeValue');
+      }
+      
+      return defaultTime;
+    }
+    
+    // Create default times based on the current day
+    final now = DateTime.now();
+    final defaultStartTime = DateTime(now.year, now.month, now.day, 9, 0);
+    final defaultEndTime = DateTime(now.year, now.month, now.day, 10, 0);
+    
+    // Get location info
+    String locationName = '';
+    if (json['location'] != null) {
+      if (json['location'] is String) {
+        locationName = json['location'];
+      } else if (json['location'] is Map) {
+        locationName = json['location']['name'] ?? '';
+        if (locationName.isEmpty && json['location']['address'] != null) {
+          locationName = json['location']['address'];
+        }
+      }
+    }
+    
+    // Get cost info
+    double? cost;
+    String? currency = 'USD';
+    if (json['cost'] != null) {
+      if (json['cost'] is double || json['cost'] is int) {
+        cost = (json['cost'] as num).toDouble();
+      } else if (json['cost'] is Map) {
+        cost = json['cost']['amount'] != null ? (json['cost']['amount'] as num).toDouble() : null;
+        currency = json['cost']['currency'] ?? 'USD';
+      }
+    }
+
+    // Determine start and end times
+    DateTime startTime;
+    DateTime endTime;
+    
+    if (json['timeRange'] != null) {
+      // Backend format
+      startTime = parseTimeField(json['timeRange']['start'], defaultStartTime);
+      endTime = parseTimeField(json['timeRange']['end'], defaultEndTime);
+    } else {
+      // Frontend format
+      startTime = parseTimeField(json['startTime'], defaultStartTime);
+      endTime = parseTimeField(json['endTime'], defaultEndTime);
+    }
+    
     return Activity(
-      id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      type: ActivityType.values[json['type']],
-      startTime: DateTime.parse(json['startTime']),
-      endTime: DateTime.parse(json['endTime']),
-      location: json['location'],
+      id: json['id'] ?? json['_id'] ?? json['uuid'] ?? 'unknown_${DateTime.now().millisecondsSinceEpoch}',
+      title: json['title'] ?? 'Untitled Activity',
+      description: json['description'] ?? json['notes'] ?? '',
+      type: getActivityTypeFromBackend(json['type']),
+      startTime: startTime,
+      endTime: endTime,
+      location: locationName,
       imageUrl: json['imageUrl'],
-      cost: json['cost'],
-      isBooked: json['isBooked'] ?? false,
-      bookingReference: json['bookingReference'],
-      latitude: json['latitude'],
-      longitude: json['longitude'],
+      cost: cost,
+      currency: currency,
+      isBooked: json['isBooked'] ?? json['reservationInfo'] != null,
+      bookingReference: json['bookingReference'] ?? json['reservationInfo'],
+      latitude: json['latitude'] ?? (json['location'] is Map && 
+          json['location']['coordinates'] is Map &&
+          json['location']['coordinates']['coordinates'] is List ? 
+          json['location']['coordinates']['coordinates'][1] : null),
+      longitude: json['longitude'] ?? (json['location'] is Map && 
+          json['location']['coordinates'] is Map &&
+          json['location']['coordinates']['coordinates'] is List ? 
+          json['location']['coordinates']['coordinates'][0] : null),
     );
   }
 
   // Convert to JSON
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
+    // Convert frontend ActivityType to backend format
+    String getBackendActivityType(ActivityType type) {
+      switch (type) {
+        case ActivityType.attraction:
+          return 'attraction';
+        case ActivityType.dining:
+          return 'food';
+        case ActivityType.transportation:
+          return 'transport';
+        case ActivityType.accommodation:
+          return 'accommodation';
+        case ActivityType.event:
+          return 'event';
+        case ActivityType.leisure:
+          return 'other';
+        default:
+          return 'other';
+      }
+    }
+    
+    // Basic fields
+    final Map<String, dynamic> json = {
       'title': title,
-      'description': description,
-      'type': type.index,
-      'startTime': startTime.toIso8601String(),
-      'endTime': endTime.toIso8601String(),
-      'location': location,
-      'imageUrl': imageUrl,
-      'cost': cost,
-      'isBooked': isBooked,
-      'bookingReference': bookingReference,
-      'latitude': latitude,
-      'longitude': longitude,
+      'type': getBackendActivityType(type),
+      'notes': description,
     };
+    
+    // ID field - use uuid for backend
+    if (id.isNotEmpty) {
+      if (id.startsWith('unknown_')) {
+        // This is a new activity, don't include ID
+      } else {
+        json['uuid'] = id;
+      }
+    }
+    
+    // Time range
+    json['timeRange'] = {
+      'start': startTime.toIso8601String(),
+      'end': endTime.toIso8601String(),
+    };
+    
+    // Location
+    json['location'] = {
+      'name': location,
+    };
+    
+    // Add coordinates if available
+    if (latitude != null && longitude != null) {
+      json['location']['coordinates'] = {
+        'type': 'Point',
+        'coordinates': [longitude, latitude],
+      };
+    }
+    
+    // Cost
+    if (cost != null) {
+      json['cost'] = {
+        'amount': cost,
+        'currency': currency ?? 'USD',
+      };
+    }
+    
+    // Booking info
+    if (bookingReference != null && bookingReference!.isNotEmpty) {
+      json['reservationInfo'] = bookingReference;
+    }
+    
+    return json;
   }
 
   // Create a list of Activity from JSON list
   static List<Activity> fromJsonList(List<dynamic> jsonList) {
-    return jsonList.map((json) => Activity.fromJson(json)).toList();
+    final List<Activity> activities = [];
+    
+    for (var json in jsonList) {
+      try {
+        final activity = Activity.fromJson(json);
+        activities.add(activity);
+      } catch (e) {
+        print('Error parsing activity: $e');
+        print('Problematic JSON: $json');
+        // Skip this activity rather than failing the entire list
+        continue;
+      }
+    }
+    
+    return activities;
   }
 
   // Create dummy activities for a given day number
