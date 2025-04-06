@@ -5,6 +5,7 @@ import { fetchItineraryById, updateItinerary, removeItinerary, addDayToItinerary
 import { differenceInDays, addDays, format, parseISO } from 'date-fns'
 import GroupItineraryMembers from '../components/GroupItineraryMembers'
 import ItineraryMap from '../components/ItineraryMap'
+import ItinerarySuggestions from '../components/ItinerarySuggestions'
 import axios from 'axios'
 import { toast } from 'react-hot-toast'
 import BudgetManager from '../components/BudgetManager'
@@ -475,6 +476,9 @@ function ItineraryDetails() {
   // Main JSX return - moved to after all conditional returns
   return (
     <div className="max-w-6xl mx-auto py-8 px-4 relative">
+      {/* Suggestions Component */}
+      <ItinerarySuggestions itineraryId={id} />
+      
       {/* Display local error if present */}
       {localError && localError !== "Generating itinerary days with AI..." && (
         <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">

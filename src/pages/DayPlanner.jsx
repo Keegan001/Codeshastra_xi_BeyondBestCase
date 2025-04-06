@@ -32,7 +32,6 @@ function DayPlanner() {
   })
   const [isAddingActivity, setIsAddingActivity] = useState(false)
   const [selectedPlace, setSelectedPlace] = useState(null)
-  const [activeTab, setActiveTab] = useState('activities')
   
   if (!isAuthenticated) {
     return <Navigate to="/login" />
@@ -307,52 +306,6 @@ function DayPlanner() {
     })
   }
 
-  // Fetch suggestions separately when tab is changed to prevent 403 errors
-  useEffect(() => {
-    if (activeTab === 'suggestions' && id) {
-      // Check if we need to load suggestions or if we already have them
-      if (!itinerary?.additionalSuggestions) {
-        const token = localStorage.getItem('token')
-        if (!token) return
-        
-        setIsLoading(true)
-        setError(null)
-        
-        // Make a separate API call to get suggestions with proper authentication
-        axios.get(`http://localhost:5000/api/itineraries/${id}/suggestions`, {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
-        })
-        .then(response => {
-          console.log('Suggestions data:', response.data)
-          if (response.data && response.data.status === 'success' && response.data.data) {
-            // Update only the additionalSuggestions part of the itinerary
-            setItinerary(prev => ({
-              ...prev,
-              additionalSuggestions: response.data.data.suggestions || response.data.data
-            }))
-          }
-          setIsLoading(false)
-        })
-        .catch(err => {
-          console.error('Error loading suggestions:', err)
-          const errorMsg = err.response?.status === 403 
-            ? 'Access denied. You do not have permission to view suggestions.' 
-            : 'Failed to load suggestions. Please try again.';
-          setError(errorMsg)
-          setIsLoading(false)
-          
-          // Create empty suggestions object to prevent repeated API calls on error
-          setItinerary(prev => ({
-            ...prev,
-            additionalSuggestions: { /* Empty placeholder */ }
-          }))
-        })
-      }
-    }
-  }, [activeTab, id, itinerary?.additionalSuggestions])
-
   if (isLoading && !day) {
     return (
       <div className="max-w-5xl mx-auto py-12 px-4 sm:px-6 flex justify-center items-center min-h-[60vh]">
@@ -475,40 +428,6 @@ function DayPlanner() {
         </div>
         
         <div className="p-6">
-          {/* Tab Navigation */}
-          <div className="flex space-x-1 border-b mb-6">
-            <button
-              className={`px-4 py-3 text-sm font-medium rounded-t-lg transition-colors ${
-                activeTab === 'activities' 
-                  ? 'bg-white border-l border-t border-r border-gray-200 text-indigo-700 -mb-px' 
-                  : 'text-gray-600 hover:text-indigo-600 bg-gray-50'
-              }`}
-              onClick={() => setActiveTab('activities')}
-            >
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                </svg>
-                Activities
-              </div>
-            </button>
-            <button
-              className={`px-4 py-3 text-sm font-medium rounded-t-lg transition-colors ${
-                activeTab === 'suggestions' 
-                  ? 'bg-white border-l border-t border-r border-gray-200 text-indigo-700 -mb-px' 
-                  : 'text-gray-600 hover:text-indigo-600 bg-gray-50'
-              }`}
-              onClick={() => setActiveTab('suggestions')}
-            >
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16v-1h4v1a2 2 0 11-4 0zM12 14c.015-.34.208-.646.477-.859a4 4 0 10-4.954 0c.27.213.462.519.476.859h4.002z" />
-                </svg>
-                Suggestions
-              </div>
-            </button>
-          </div>
-          
           {isAddingActivity && (
             <div className="bg-gray-50 p-6 rounded-xl mb-6 border border-gray-200 shadow-sm">
               <h3 className="text-lg font-medium mb-5 flex items-center text-gray-900">
@@ -796,108 +715,92 @@ function DayPlanner() {
             </div>
           )}
           
-          {activeTab === 'activities' ? (
-            <>
-              {!sortedActivities || sortedActivities.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-300">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">No Activities Planned Yet</h3>
-                  <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-                    Start adding activities to create your perfect day plan.
-                  </p>
-                  <button
-                    onClick={() => setIsAddingActivity(true)}
-                    className="bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 shadow-md transition-colors inline-flex items-center"
-                    disabled={isAddingActivity}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                    </svg>
-                    Add Your First Activity
-                  </button>
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                  <ul className="divide-y divide-gray-200">
+          <div>
+            {day?.activities && day.activities.length > 0 ? (
+              <div className="space-y-3">
+                {/* Timeline of activities */}
+                <div className="relative">
+                  <div className="absolute top-0 bottom-0 left-7 w-1 bg-indigo-100 z-0"></div>
+                  <ul className="space-y-4 relative z-10">
                     {sortedActivities.map((activity, index) => {
-                      const activityId = activity.id || activity._id || `activity-${index}`;
-                      const activityType = activity.type || 'other';
-                      
-                      // Icon based on activity type
-                      let icon = '📝'; // Default
-                      if (activityType === 'attraction') icon = '🏛️';
-                      if (activityType === 'food') icon = '🍽️';
-                      if (activityType === 'transport') icon = '🚌';
-                      if (activityType === 'accommodation') icon = '🏨';
-                      
-                      // Get background color for each activity type
-                      let bgColor = 'bg-gray-50'; // Default
-                      if (activityType === 'attraction') bgColor = 'bg-blue-50';
-                      if (activityType === 'food') bgColor = 'bg-green-50';
-                      if (activityType === 'transport') bgColor = 'bg-yellow-50';
-                      if (activityType === 'accommodation') bgColor = 'bg-purple-50';
-                      
                       return (
-                        <li 
-                          key={activityId} 
-                          className={`p-5 ${index % 2 === 0 ? 'bg-white' : bgColor} hover:bg-gray-50 transition-colors`}
-                        >
-                          <div className="flex justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-start">
-                                <span className="mr-3 text-xl">{icon}</span>
-                                <div>
-                                  <h3 className="text-lg font-medium text-gray-900">{activity.title}</h3>
-                                  
-                                  <div className="flex flex-wrap items-center mt-1 space-x-2">
-                                    {(activity.startTime || activity.endTime) && (
-                                      <span className="inline-flex items-center text-gray-600 text-sm">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
-                                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
-                                        </svg>
-                                        {activity.startTime && formatTime(activity.startTime)}
-                                        {activity.startTime && activity.endTime && ' - '}
-                                        {activity.endTime && formatTime(activity.endTime)}
-                                      </span>
-                                    )}
-                                    
-                                    {(parseFloat(activity.cost) > 0 || activity.costObject?.amount > 0) && (
-                                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                        {activity.costObject?.amount > 0 
-                                          ? `${activity.costObject.currency} ${parseFloat(activity.costObject.amount).toFixed(2)}`
-                                          : `$${parseFloat(activity.cost).toFixed(2)}`
-                                        }
-                                      </span>
-                                    )}
-                                    
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 capitalize">
-                                      {activityType}
-                                    </span>
-                                  </div>
-                                  
-                                  {activity.placeName && (
-                                    <p className="flex items-center text-indigo-600 text-sm mt-2">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                      </svg>
-                                      {activity.placeName}
-                                    </p>
-                                  )}
-                                  
-                                  {activity.notes && (
-                                    <div className="mt-3 text-gray-700 text-sm bg-gray-50 p-3 rounded-lg border border-gray-100">
-                                      {activity.notes}
-                                    </div>
-                                  )}
-                                </div>
+                        <li key={activity.id || index} className="relative">
+                          <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+                            <div className="flex flex-col md:flex-row md:items-center gap-4">
+                              {/* Activity Type Icon */}
+                              <div className={`w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 ${
+                                activity.type === 'transport' ? 'bg-yellow-100' : 
+                                activity.type === 'accommodation' ? 'bg-indigo-100' : 
+                                activity.type === 'food' ? 'bg-green-100' : 
+                                activity.type === 'attraction' ? 'bg-blue-100' : 
+                                'bg-gray-100'
+                              }`}>
+                                {activity.type === 'transport' && (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-yellow-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
+                                    <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H11a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-6a1 1 0 00-.293-.707l-3-3A1 1 0 0016 3H3z" />
+                                  </svg>
+                                )}
+                                {activity.type === 'accommodation' && (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
+                                  </svg>
+                                )}
+                                {activity.type === 'food' && (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M3 1a1 1 0 000 2h1.22l.305 1.222a.997.997 0 00.01.042l1.358 5.43-.893.892C3.74 11.846 4.632 14 6.414 14H15a1 1 0 000-2H6.414l1-1H14a1 1 0 00.894-.553l3-6A1 1 0 0017 3H6.28l-.31-1.243A1 1 0 005 1H3zM16 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM6.5 18a1.5 1.5 0 100-3 1.5 1.5 0 000 3z" />
+                                  </svg>
+                                )}
+                                {activity.type === 'attraction' && (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-blue-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M2 6a2 2 0 012-2h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm10.293 2.293a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L13 10.414V15a1 1 0 11-2 0v-4.586l-2.293 2.293a1 1 0 01-1.414-1.414l3-3zM8 6a1 1 0 100 2 1 1 0 000-2z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                                {(activity.type === 'other' || !activity.type) && (
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7 text-gray-500" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
+                                  </svg>
+                                )}
                               </div>
-                            </div>
-                            
-                            <div className="flex ml-4">
+                              
+                              {/* Activity Details */}
+                              <div className="flex-grow">
+                                <h3 className="font-medium text-lg text-gray-900">{activity.title}</h3>
+                                {activity.placeName && (
+                                  <div className="text-gray-600 text-sm flex items-center mt-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                                    </svg>
+                                    {activity.placeName}
+                                  </div>
+                                )}
+                                {activity.startTime && activity.endTime && (
+                                  <div className="text-gray-600 text-sm flex items-center mt-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                                    </svg>
+                                    {formatTime(activity.startTime)} - {formatTime(activity.endTime)}
+                                  </div>
+                                )}
+                                {activity.cost > 0 && (
+                                  <div className="text-gray-600 text-sm flex items-center mt-1">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                      <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                                    </svg>
+                                    {activity.cost} {activity.costCurrency || 'USD'}
+                                  </div>
+                                )}
+                                {activity.notes && (
+                                  <div className="mt-3 bg-gray-50 p-3 rounded-lg text-gray-700 text-sm">
+                                    {activity.notes}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {/* Actions */}
                               <button
-                                onClick={() => removeActivity(activityId)}
+                                onClick={() => removeActivity(activity.id)}
                                 className="text-gray-400 hover:text-red-600 transition-colors p-1"
                                 title="Remove activity"
                               >
@@ -912,242 +815,28 @@ function DayPlanner() {
                     })}
                   </ul>
                 </div>
-              )}
-            </>
-          ) : (
-            // Additional Suggestions Tab Content
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              {isLoading ? (
-                <div className="text-center py-12">
-                  <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-                  <p className="text-gray-600 font-medium">Loading suggestions...</p>
-                </div>
-              ) : itinerary?.additionalSuggestions ? (
-                <div className="space-y-8">
-                  {/* Accommodation Suggestions */}
-                  {itinerary.additionalSuggestions.accommodations && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center text-indigo-900">
-                        <span className="bg-indigo-100 p-1.5 rounded-lg mr-2">🏨</span>
-                        Accommodation Suggestions
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {Object.entries(itinerary.additionalSuggestions.accommodations).map(([type, hotels]) => (
-                          <div key={type} className="bg-indigo-50 p-4 rounded-lg shadow-sm border border-indigo-100">
-                            <h4 className="font-medium mb-3 capitalize text-indigo-800 border-b border-indigo-100 pb-2">{type}</h4>
-                            <ul className="space-y-3">
-                              {Array.isArray(hotels) ? hotels.map((hotel, index) => (
-                                <li key={index} className="bg-white p-3 rounded border border-indigo-100 shadow-sm">
-                                  <div className="font-medium text-gray-900">{hotel.name}</div>
-                                  {hotel.area && (
-                                    <div className="text-sm text-gray-600 mt-1 flex items-center">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                      </svg>
-                                      {hotel.area}
-                                    </div>
-                                  )}
-                                  {hotel.price_range && (
-                                    <div className="text-sm text-gray-600 mt-1 flex items-center">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-indigo-500" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
-                                      </svg>
-                                      {hotel.price_range}
-                                    </div>
-                                  )}
-                                  {hotel.amenities && hotel.amenities.length > 0 && (
-                                    <div className="text-sm text-gray-600 mt-2">
-                                      <div className="font-medium text-gray-700 mb-1">Amenities:</div>
-                                      <div className="flex flex-wrap gap-1">
-                                        {hotel.amenities.map((amenity, i) => (
-                                          <span key={i} className="px-2 py-1 bg-gray-100 rounded-full text-xs">
-                                            {amenity}
-                                          </span>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                </li>
-                              )) : (
-                                <li className="bg-white p-3 rounded border border-indigo-100 shadow-sm">
-                                  <p className="text-gray-600">No specific hotels listed</p>
-                                </li>
-                              )}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Restaurant Suggestions */}
-                  {itinerary.additionalSuggestions.restaurants && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center text-indigo-900">
-                        <span className="bg-indigo-100 p-1.5 rounded-lg mr-2">🍽️</span>
-                        Restaurant Suggestions
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {Object.entries(itinerary.additionalSuggestions.restaurants).map(([cuisine, restaurants]) => (
-                          <div key={cuisine} className="bg-green-50 p-4 rounded-lg shadow-sm border border-green-100">
-                            <h4 className="font-medium mb-3 capitalize text-green-800 border-b border-green-100 pb-2">{cuisine} Cuisine</h4>
-                            <ul className="space-y-3">
-                              {Array.isArray(restaurants) ? restaurants.map((restaurant, index) => (
-                                <li key={index} className="bg-white p-3 rounded border border-green-100 shadow-sm">
-                                  <div className="font-medium text-gray-900">{restaurant.name}</div>
-                                  {restaurant.price_range && (
-                                    <div className="mt-1 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                      {restaurant.price_range}
-                                    </div>
-                                  )}
-                                  {restaurant.speciality && (
-                                    <div className="text-sm text-gray-600 mt-1 flex items-center">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                                      </svg>
-                                      Speciality: {restaurant.speciality}
-                                    </div>
-                                  )}
-                                  {restaurant.address && (
-                                    <div className="text-sm text-gray-600 mt-1 flex items-center">
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-                                      </svg>
-                                      {restaurant.address}
-                                    </div>
-                                  )}
-                                </li>
-                              )) : typeof restaurants === 'object' && restaurants !== null ? (
-                                <li className="bg-white p-3 rounded border border-green-100 shadow-sm">
-                                  <div className="font-medium text-gray-900">{restaurants.name || "Restaurant"}</div>
-                                  {restaurants.description && (
-                                    <div className="text-sm text-gray-600 mt-1">{restaurants.description}</div>
-                                  )}
-                                </li>
-                              ) : (
-                                <li className="bg-white p-3 rounded border border-green-100 shadow-sm">
-                                  <p className="text-gray-600">No specific restaurants listed</p>
-                                </li>
-                              )}
-                            </ul>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Activity Suggestions */}
-                  {itinerary.additionalSuggestions.activities && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center text-indigo-900">
-                        <span className="bg-indigo-100 p-1.5 rounded-lg mr-2">🎯</span>
-                        Activity Suggestions
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {Array.isArray(itinerary.additionalSuggestions.activities) ? 
-                          itinerary.additionalSuggestions.activities.map((activity, index) => (
-                            <div key={index} className="bg-blue-50 p-4 rounded-lg border border-blue-100 shadow-sm hover:shadow-md transition-shadow">
-                              <div className="font-medium text-gray-900 text-lg">
-                                {activity.name || activity.title || (typeof activity === 'string' ? activity : 'Activity')}
-                              </div>
-                              {typeof activity === 'object' && activity.description && (
-                                <div className="text-gray-700 mt-2">{activity.description}</div>
-                              )}
-                              <button 
-                                onClick={() => {
-                                  setNewActivity(prev => ({
-                                    ...prev,
-                                    title: activity.name || activity.title || (typeof activity === 'string' ? activity : 'Activity'),
-                                    notes: typeof activity === 'object' && activity.description ? activity.description : '',
-                                    type: 'attraction'
-                                  }));
-                                  setIsAddingActivity(true);
-                                  setActiveTab('activities');
-                                }}
-                                className="mt-3 text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                                </svg>
-                                Add to Itinerary
-                              </button>
-                            </div>
-                          )) : (
-                            <div className="col-span-2 bg-blue-50 p-4 rounded-lg border border-blue-100 shadow-sm">
-                              <p className="text-gray-600">No specific activities listed</p>
-                            </div>
-                          )
-                        }
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Transportation Suggestions */}
-                  {itinerary.additionalSuggestions.transportation && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4 flex items-center text-indigo-900">
-                        <span className="bg-indigo-100 p-1.5 rounded-lg mr-2">🚌</span>
-                        Transportation Options
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {Array.isArray(itinerary.additionalSuggestions.transportation) ? 
-                          itinerary.additionalSuggestions.transportation.map((option, index) => (
-                            <div key={index} className="bg-yellow-50 p-4 rounded-lg border border-yellow-100 shadow-sm">
-                              <div className="font-medium text-gray-900">
-                                {option.mode || option.name || option.type || `Option ${index + 1}`}
-                              </div>
-                              {option.description && (
-                                <div className="text-gray-700 mt-2 text-sm">{option.description}</div>
-                              )}
-                              {option.cost && (
-                                <div className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                  Cost: {option.cost}
-                                </div>
-                              )}
-                              <button 
-                                onClick={() => {
-                                  setNewActivity(prev => ({
-                                    ...prev,
-                                    title: option.mode || option.name || option.type || `Transportation Option ${index + 1}`,
-                                    notes: option.description || '',
-                                    type: 'transport',
-                                    cost: option.cost ? parseFloat(option.cost.replace(/[^0-9.]/g, '')) || 0 : 0
-                                  }));
-                                  setIsAddingActivity(true);
-                                  setActiveTab('activities');
-                                }}
-                                className="mt-3 text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
-                                </svg>
-                                Add to Itinerary
-                              </button>
-                            </div>
-                          )) : (
-                            <div className="col-span-2 bg-yellow-50 p-4 rounded-lg border border-yellow-100 shadow-sm">
-                              <p className="text-gray-600">No specific transportation options listed</p>
-                            </div>
-                          )
-                        }
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-12">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-gray-50 rounded-xl">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h3 className="text-lg font-medium text-gray-700 mb-2">No Activities Yet</h3>
+                <p className="text-gray-500 max-w-md mx-auto mb-6">
+                  You haven't added any activities to this day yet. Click the button above to add your first activity.
+                </p>
+                <button
+                  onClick={() => setIsAddingActivity(true)}
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 shadow-sm transition-colors flex items-center mx-auto"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
                   </svg>
-                  <h3 className="text-lg font-medium text-gray-700 mb-2">No Additional Suggestions</h3>
-                  <p className="text-gray-500 max-w-md mx-auto">
-                    There are no additional suggestions available for this itinerary.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
+                  Add First Activity
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <ItineraryMap 
