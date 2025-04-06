@@ -5,6 +5,7 @@ import { ApiError } from '../middleware/errorHandler.js';
 import { Itinerary } from '../models/index.js';
 import axios from 'axios';
 import { cleanAndParseItineraryResponse } from '../utils/ai-helpers.js';
+import { generateBasicSuggestions } from '../utils/suggestion-generator.js';
 
 /**
  * ItineraryController - Handles itinerary-related API endpoints
@@ -662,13 +663,79 @@ class ItineraryController {
   async clearDayActivities(req, res, next) {
     try {
       const userId = req.user.id;
-      const itineraryId = req.params.id;
       const dayId = req.params.dayId;
       
-      // Clear all activities
-      const updatedDay = await dayService.clearDayActivities(dayId, userId);
+      await dayService.clearDayActivities(dayId, userId);
       
-      ApiResponse.success(res, 200, 'All activities cleared for the day', { day: updatedDay });
+      ApiResponse.success(res, 200, 'Day activities cleared successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Get itinerary suggestions
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  async getItinerarySuggestions(req, res, next) {
+    try {
+      const userId = req.user.id;
+      const itineraryId = req.params.id;
+      
+      // Get the full itinerary with populated days and activities
+      const itinerary = await itineraryService.getItineraryById(itineraryId, userId, {
+        populateDays: true,
+        populateActivities: true
+      });
+      
+      if (!itinerary) {
+        throw ApiError.notFound('Itinerary not found');
+      }
+      
+      // Check if we already have suggestions
+      let suggestions = itinerary.additionalSuggestions;
+      
+      // If no suggestions exist or force refresh is requested, get new ones from AI
+      if (!suggestions || Object.keys(suggestions || {}).length === 0 || req.query.refresh === 'true') {
+        try {
+          console.log('Generating new suggestions from AI service...');
+          
+          // Generate a session ID for the AI conversation
+          const session_id = `itinerary_suggestions_${itineraryId}_${Date.now()}`;
+          
+          // Call the AI service to generate suggestions
+          const aiResponse = await axios.post('http://localhost:8000/api/ai/generate-suggestions', {
+            session_id,
+            itinerary: itinerary
+          });
+          
+          if (aiResponse.data && aiResponse.data.suggestions) {
+            suggestions = aiResponse.data.suggestions;
+            
+            // Store the suggestions in the itinerary for future use
+            itinerary.additionalSuggestions = suggestions;
+            await itinerary.save();
+            
+            console.log('New suggestions generated and saved to itinerary');
+          }
+        } catch (aiError) {
+          console.error('Error generating suggestions from AI:', aiError);
+          
+          // If AI call fails, use fallback suggestion generator
+          console.log('Using fallback suggestion generator...');
+          suggestions = generateBasicSuggestions(itinerary);
+          
+          // Store the fallback suggestions in the itinerary
+          itinerary.additionalSuggestions = suggestions;
+          await itinerary.save();
+          
+          console.log('Fallback suggestions generated and saved to itinerary');
+        }
+      }
+      
+      ApiResponse.success(res, 200, 'Suggestions retrieved successfully', { suggestions: suggestions || {} });
     } catch (error) {
       next(error);
     }

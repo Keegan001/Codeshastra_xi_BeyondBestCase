@@ -191,4 +191,11 @@ router.post(
   itineraryController.addActivity
 );
 
+// Get suggestions for an itinerary
+router.get(
+  '/:id/suggestions',
+  authenticate,
+  itineraryController.getItinerarySuggestions
+);
+
 export default router; 
