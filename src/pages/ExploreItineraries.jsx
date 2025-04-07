@@ -19,6 +19,18 @@ const ExploreItineraries = () => {
   });
   const [requestedItineraries, setRequestedItineraries] = useState([]);
   
+  // Sample images array
+  const sampleImages = [
+    'https://plus.unsplash.com/premium_photo-1661930618375-aafabc2bf3e7',
+    'https://images.unsplash.com/photo-1507525428034-b723cf961d3e',
+    'https://images.unsplash.com/photo-1494783367193-149034c05e8f',
+    'https://images.unsplash.com/photo-1496950866446-3253e1470e8e',
+    'https://images.unsplash.com/photo-1506012787146-f92b2d7d6d96',
+    'https://images.unsplash.com/photo-1501785888041-af3ef285b470',
+    'https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1',
+    'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800'
+  ];
+  
   // Get authentication state and itineraries from Redux
   const { isAuthenticated, user } = useSelector(state => state.auth);
   const { publicItineraries, isLoading, error } = useSelector(state => state.itinerary);
@@ -79,6 +91,12 @@ const ExploreItineraries = () => {
 
   const viewItineraryDetails = (itineraryId) => {
     navigate(`/itineraries/${itineraryId}`);
+  };
+
+  // Helper function to get a random image from the sample images array
+  const getRandomImage = () => {
+    const randomIndex = Math.floor(Math.random() * sampleImages.length);
+    return sampleImages[randomIndex];
   };
 
   // Check if the current user is the owner of an itinerary
@@ -317,18 +335,13 @@ const ExploreItineraries = () => {
                   whileHover={{ y: -5, transition: { duration: 0.2 } }}
                   layout
                 >
-                  <div className="bg-gradient-to-r from-[#56288A]/5 to-[#864BD8]/5 h-48 flex items-center justify-center">
-                    {itinerary.coverImage ? (
-                      <img 
-                        src={itinerary.coverImage} 
-                        alt={itinerary.title} 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="bg-gradient-to-br from-[#56288A]/10 to-[#864BD8]/20 w-full h-full flex items-center justify-center">
-                        <FaMapMarkerAlt className="text-5xl text-[#56288A]" />
-                      </div>
-                    )}
+                  <div className="h-48 flex items-center justify-center overflow-hidden">
+                    {/* Always display a random image from the sample images array */}
+                    <img 
+                      src={getRandomImage()} 
+                      alt={itinerary.title} 
+                      className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                    />
                   </div>
                   
                   <div className="p-6">
@@ -462,4 +475,4 @@ const ExploreItineraries = () => {
   );
 };
 
-export default ExploreItineraries; 
+export default ExploreItineraries;
