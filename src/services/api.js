@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 // Define the API URL with a fallback in case the environment variable is not defined
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+const API_URL = `${import.meta.env.VITE_API_URL}/api` || "http://localhost:5000/api";
 
 // Create axios instance with default config
 const api = axios.create({

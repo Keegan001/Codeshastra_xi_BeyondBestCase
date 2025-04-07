@@ -30,11 +30,18 @@ function ItinerarySuggestions({ itineraryId, isOpen, setIsOpen }) {
     
     try {
       // Make API call to get suggestions with proper authentication
-      const response = await axios.get(`http://localhost:5000/api/itineraries/${itineraryId}/suggestions${refresh ? '?refresh=true' : ''}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      const response = await axios.get(
+        `${
+          import.meta.env.VITE_API_URL
+        }/api/itineraries/${itineraryId}/suggestions${
+          refresh ? "?refresh=true" : ""
+        }`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
-      })
+      );
       
       console.log('Suggestions data:', response.data)
       if (response.data && response.data.status === 'success' && response.data.data) {

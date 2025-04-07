@@ -483,9 +483,21 @@ function ItineraryDetails() {
     <div className="max-w-6xl mx-auto py-8 px-4 relative">
       {/* Back button at the top */}
       <div className="mb-6">
-        <Link to="/itineraries" className="text-[#56288A] hover:text-[#864BD8] flex items-center">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
+        <Link
+          to="/itineraries"
+          className="text-[#56288A] hover:text-[#864BD8] flex items-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5 mr-1"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+              clipRule="evenodd"
+            />
           </svg>
           Back to Itineraries
         </Link>
@@ -499,20 +511,42 @@ function ItineraryDetails() {
           className="flex flex-col items-center justify-center bg-gradient-to-br from-[#56288A] to-[#864BD8] text-white p-3 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
           title="View Suggestions"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+            />
           </svg>
           <span className="text-xs font-medium mt-1">Ideas</span>
         </button>
-        
+
         {/* Travel Documents Button */}
         <button
           onClick={() => setShowTravelDocs(!showTravelDocs)}
           className="flex flex-col items-center justify-center bg-gradient-to-br from-[#56288A] to-[#864BD8] text-white p-3 rounded-full shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
           title="Travel Documents"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
           </svg>
           <span className="text-xs font-medium mt-1">Docs</span>
         </button>
@@ -525,28 +559,59 @@ function ItineraryDetails() {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-3">
                 <h2 className="text-xl font-bold text-[#56288A] flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
                   Travel Documents Required
                 </h2>
-                <button 
+                <button
                   onClick={() => setShowTravelDocs(false)}
                   className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 p-1.5 rounded-full transition-colors"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
                   </svg>
                 </button>
               </div>
-              
+
               <p className="text-gray-600 mb-4">
-                Here are the essential travel documents required when traveling from {itinerary.sourceLocation || 'Borivali'} to {typeof itinerary.destination === 'object' ? itinerary.destination.name : itinerary.destination}.
+                Here are the essential travel documents required when traveling
+                from {itinerary.sourceLocation || "Borivali"} to{" "}
+                {typeof itinerary.destination === "object"
+                  ? itinerary.destination.name
+                  : itinerary.destination}
+                .
               </p>
-              
-              <LegalDocRecommendations 
-                source={itinerary.sourceLocation || 'Borivali'} 
-                destination={typeof itinerary.destination === 'object' ? itinerary.destination.name : itinerary.destination} 
+
+              <LegalDocRecommendations
+                source={itinerary.sourceLocation || "Borivali"}
+                destination={
+                  typeof itinerary.destination === "object"
+                    ? itinerary.destination.name
+                    : itinerary.destination
+                }
               />
             </div>
           </div>
@@ -554,31 +619,55 @@ function ItineraryDetails() {
       )}
 
       {/* Suggestions Component */}
-      <ItinerarySuggestions itineraryId={id} isOpen={showSuggestions} setIsOpen={setShowSuggestions} />
-      
+      <ItinerarySuggestions
+        itineraryId={id}
+        isOpen={showSuggestions}
+        setIsOpen={setShowSuggestions}
+      />
+
       {/* Display local error if present */}
       {localError && localError !== "Generating itinerary days with AI..." && (
         <div className="bg-red-100 text-red-700 p-4 rounded-lg mb-6">
           {localError}
         </div>
       )}
-      
+
       {/* Loading message for AI generation */}
       {localError === "Generating itinerary days with AI..." && (
         <div className="bg-blue-100 text-blue-700 p-4 rounded-lg mb-6 flex items-center">
-          <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24" fill="none">
-            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          <svg
+            className="animate-spin h-5 w-5 mr-3"
+            viewBox="0 0 24 24"
+            fill="none"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            ></circle>
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
           </svg>
           {localError}
         </div>
       )}
-      
+
       <div className="mb-8">
         {isEditMode ? (
           <div className="bg-white shadow-md rounded-lg p-6 mb-4">
             <div className="mb-4">
-              <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+              <label
+                htmlFor="title"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Title
+              </label>
               <input
                 type="text"
                 id="title"
@@ -588,9 +677,14 @@ function ItineraryDetails() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-            
+
             <div className="mb-4">
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Description
+              </label>
               <textarea
                 id="description"
                 name="description"
@@ -600,9 +694,14 @@ function ItineraryDetails() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               ></textarea>
             </div>
-            
+
             <div className="mb-4">
-              <label htmlFor="destination" className="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+              <label
+                htmlFor="destination"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Destination
+              </label>
               <input
                 type="text"
                 id="destination"
@@ -612,7 +711,7 @@ function ItineraryDetails() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
-            
+
             <div className="flex justify-end space-x-3">
               <button
                 onClick={() => setIsEditMode(false)}
@@ -633,20 +732,24 @@ function ItineraryDetails() {
             <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-2">
               <div className="flex flex-col">
                 <div className="flex items-center gap-4">
-                  <h1 className="text-2xl font-bold text-gray-800">{itinerary?.title}</h1>
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                    editData.isPrivate 
-                      ? 'bg-red-100 text-red-800' 
-                      : 'bg-green-100 text-green-800'
-                  }`}>
-                    {editData.isPrivate ? 'Private' : 'Public'}
+                  <h1 className="text-2xl font-bold text-gray-800">
+                    {itinerary?.title}
+                  </h1>
+                  <span
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      editData.isPrivate
+                        ? "bg-red-100 text-red-800"
+                        : "bg-green-100 text-green-800"
+                    }`}
+                  >
+                    {editData.isPrivate ? "Private" : "Public"}
                   </span>
                   {isUserOwnerOrEditor() && !isEditing && (
-                    <button 
+                    <button
                       onClick={handleTogglePrivacy}
                       className="text-sm text-[#56288A] hover:text-[#864BD8]"
                     >
-                      {editData.isPrivate ? 'Make Public' : 'Make Private'}
+                      {editData.isPrivate ? "Make Public" : "Make Private"}
                     </button>
                   )}
                 </div>
@@ -660,7 +763,12 @@ function ItineraryDetails() {
                     onClick={() => setIsEditMode(true)}
                     className="bg-[#56288A] text-white px-4 py-2 rounded-lg hover:bg-[#864BD8] flex items-center"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-5 w-5 mr-1"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                    >
                       <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                     </svg>
                     Edit
@@ -670,8 +778,17 @@ function ItineraryDetails() {
                       onClick={handleDelete}
                       className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 flex items-center"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 mr-1"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                          clipRule="evenodd"
+                        />
                       </svg>
                       Delete
                     </button>
@@ -686,13 +803,15 @@ function ItineraryDetails() {
               </div>
               <div className="flex items-center">
                 <i className="fas fa-calendar mr-2"></i>
-                <span>{formattedStartDate} - {formattedEndDate}</span>
+                <span>
+                  {formattedStartDate} - {formattedEndDate}
+                </span>
               </div>
             </div>
           </div>
         )}
       </div>
-      
+
       {/* Action buttons in one row */}
       <div className="mb-6 flex flex-wrap justify-between items-center">
         <div className="flex flex-wrap gap-3 items-center">
@@ -702,27 +821,39 @@ function ItineraryDetails() {
             onClick={() => setShowMap(!showMap)}
             className="flex items-center bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200 text-[#56288A] hover:text-[#864BD8] hover:bg-gray-50 transition-colors"
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className="h-5 w-5 mr-2" 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 mr-2"
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
+              />
             </svg>
-            {showMap ? "Hide Route Map" : "Show Route Map"} 
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              className={`h-5 w-5 ml-1 transition-transform ${showMap ? 'transform rotate-180' : ''}`} 
-              fill="none" 
-              viewBox="0 0 24 24" 
+            {showMap ? "Hide Route Map" : "Show Route Map"}
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className={`h-5 w-5 ml-1 transition-transform ${
+                showMap ? "transform rotate-180" : ""
+              }`}
+              fill="none"
+              viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
-          
+
           {/* AI Edit Itinerary button */}
           {isUserOwnerOrEditor() && (
             <button
@@ -730,26 +861,42 @@ function ItineraryDetails() {
               className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 flex items-center gap-2"
             >
               <i className="fas fa-magic"></i>
-              {showAiEditor ? 'Hide AI Editor' : 'AI Edit Itinerary'}
+              {showAiEditor ? "Hide AI Editor" : "AI Edit Itinerary"}
             </button>
           )}
         </div>
       </div>
-      
+
       {/* AI Edit Itinerary section - Display if showAiEditor is true */}
       {showAiEditor && (
         <div className="mb-6 bg-white shadow-sm rounded-lg p-5 border border-purple-100">
           <AiEditItinerary itineraryId={id} />
         </div>
       )}
-      
+
       {showMap && (
         <div className="bg-white rounded-lg shadow-md p-6 mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-gray-800 flex items-center">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2 text-[#56288A]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                />
               </svg>
               Itinerary Route
             </h2>
@@ -758,31 +905,53 @@ function ItineraryDetails() {
                 onClick={handleSaveRoute}
                 className="bg-[#56288A] text-white px-4 py-2 rounded-lg hover:bg-[#864BD8] flex items-center"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                  />
                 </svg>
                 Save Route
               </button>
             )}
           </div>
-          
-          <ItineraryMap 
-            locations={mapLocations} 
-            setLocations={setMapLocations} 
+
+          <ItineraryMap
+            locations={mapLocations}
+            setLocations={setMapLocations}
             readOnly={!isUserOwnerOrEditor()}
             onSaveLocations={isUserOwnerOrEditor() ? handleSaveRoute : null}
           />
         </div>
       )}
-      
+
       {/* Add BudgetManager component */}
       {itinerary && (
         <div className="mb-8">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-[#56288A]/5 to-[#864BD8]/5">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 mr-2 text-[#56288A]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
                 Budget Management
               </h2>
@@ -790,8 +959,8 @@ function ItineraryDetails() {
             <div className="p-6 rounded-b-lg bg-gradient-to-br from-white to-purple-50">
               <div className="max-w-full mx-auto">
                 <div className="bg-white border border-purple-100 rounded-lg p-5 shadow-sm">
-                  <BudgetManager 
-                    itineraryId={id} 
+                  <BudgetManager
+                    itineraryId={id}
                     budget={itinerary.budget}
                     onUpdate={handleBudgetUpdate}
                     isEditorRole={isUserOwnerOrEditor()}
@@ -802,15 +971,26 @@ function ItineraryDetails() {
           </div>
         </div>
       )}
-      
+
       {/* Credit Card Recommendations */}
       {itinerary && destinationName && (
         <div className="mb-8">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-[#56288A]/5 to-[#864BD8]/5">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 mr-2 text-[#56288A]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                  />
                 </svg>
                 Travel Credit Cards
               </h2>
@@ -821,69 +1001,94 @@ function ItineraryDetails() {
           </div>
         </div>
       )}
-      
+
       {/* Add Group Members section below the itinerary details and above the daily plan */}
       {itinerary && (
         <div className="mb-8">
           <div className="bg-white rounded-lg shadow-md overflow-hidden">
             <div className="border-b border-gray-200 px-6 py-4 bg-gradient-to-r from-[#56288A]/5 to-[#864BD8]/5">
               <h2 className="text-xl font-bold text-gray-800 flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-6 w-6 mr-2 text-[#56288A]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
+                  />
                 </svg>
                 Trip Members
               </h2>
             </div>
             <div className="p-6">
-              <GroupItineraryMembers 
-                itinerary={itinerary} 
+              <GroupItineraryMembers
+                itinerary={itinerary}
                 isOwner={isUserOwnerOrEditor()}
               />
             </div>
           </div>
         </div>
       )}
-      
+
       {/* Daily Plan section */}
-      <motion.div 
+      <motion.div
         className="mb-8"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        animate={{ y: [0, 10, 0] }}
+        transition={{ duration: 0.5, type: "tween" }}
       >
         <div className="flex justify-between items-center mb-4">
-          <motion.h2 
+          <motion.h2
             className="text-2xl font-bold text-gray-800 flex items-center"
-            initial={{ x: -20, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.4 }}
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 0.5, type: "tween" }}
           >
             <motion.div
-              initial={{ rotate: -10, scale: 0.9 }}
-              animate={{ rotate: 0, scale: 1 }}
-              transition={{ delay: 0.4, duration: 0.3 }}
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 0.5, type: "tween" }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 mr-2 text-[#56288A]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
               </svg>
             </motion.div>
             Daily Plan
           </motion.h2>
-          <motion.div 
+          <motion.div
             className="flex space-x-2"
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.3, duration: 0.4 }}
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 0.5, type: "tween" }}
           >
             <motion.button
               onClick={handleRenumberDays}
               className="bg-gradient-to-r from-green-600 to-green-500 text-white px-4 py-2 rounded-lg hover:from-green-700 hover:to-green-600 disabled:opacity-60 flex items-center shadow-md"
-              disabled={isLoading || (!itinerary?.days || itinerary.days.length < 2)}
+              disabled={
+                isLoading || !itinerary?.days || itinerary.days.length < 2
+              }
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               transition={{ duration: 0.2 }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
                 <path d="M5 4a1 1 0 00-2 0v7.268a2 2 0 000 3.464V16a1 1 0 102 0v-1.268a2 2 0 000-3.464V4zM11 4a1 1 0 10-2 0v1.268a2 2 0 000 3.464V16a1 1 0 102 0V8.732a2 2 0 000-3.464V4zM16 3a1 1 0 011 1v7.268a2 2 0 010 3.464V16a1 1 0 11-2 0v-1.268a2 2 0 010-3.464V4a1 1 0 011-1z" />
               </svg>
               Renumber Days
@@ -896,8 +1101,19 @@ function ItineraryDetails() {
               whileTap={{ scale: 0.95 }}
               transition={{ duration: 0.2 }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13 10V3L4 14h7v7l9-11h-7z"
+                />
               </svg>
               Generate with AI
             </motion.button>
@@ -909,104 +1125,149 @@ function ItineraryDetails() {
               whileTap={{ scale: 0.95 }}
               transition={{ duration: 0.2 }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-1 text-[#56288A]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
               </svg>
               Add Day
             </motion.button>
           </motion.div>
         </div>
-      
-        {(!itinerary?.days || itinerary.days.length === 0) ? (
-          <motion.div 
+
+        {!itinerary?.days || itinerary.days.length === 0 ? (
+          <motion.div
             className="bg-white rounded-xl shadow-lg p-8 text-center mb-8 border border-gray-100"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 0.5, type: "tween" }}
           >
-            <motion.div 
+            <motion.div
               className="inline-block p-4 bg-indigo-50 rounded-full mb-4"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1, rotate: [0, 10, 0] }}
-              transition={{ delay: 0.6, duration: 0.5, type: "spring" }}
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 0.5, type: "tween" }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-12 w-12 text-[#56288A]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                />
               </svg>
             </motion.div>
-            <motion.h3 
+            <motion.h3
               className="text-xl font-medium text-gray-800 mb-4"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.7, duration: 0.3 }}
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 0.5, type: "tween" }}
             >
               No Days Added Yet
             </motion.h3>
-            <motion.p 
+            <motion.p
               className="text-gray-600 mb-6 max-w-md mx-auto"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8, duration: 0.3 }}
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 0.5, type: "tween" }}
             >
-              Start planning your trip by generating days with AI or adding them manually to your itinerary.
+              Start planning your trip by generating days with AI or adding them
+              manually to your itinerary.
             </motion.p>
-            <motion.div 
+            <motion.div
               className="flex justify-center space-x-3"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.3 }}
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 0.5, type: "tween" }}
             >
               <motion.button
                 onClick={generateInitialDays}
                 className="bg-gradient-to-r from-[#56288A] to-[#864BD8] text-white px-6 py-2 rounded-lg flex items-center shadow-md"
-                whileHover={{ scale: 1.05, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                }}
                 whileTap={{ scale: 0.95 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                  />
                 </svg>
                 Generate with AI
               </motion.button>
               <motion.button
                 onClick={handleAddDay}
                 className="bg-white border border-gray-300 text-gray-800 px-6 py-2 rounded-lg flex items-center shadow-sm"
-                whileHover={{ scale: 1.05, boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)" }}
+                whileHover={{
+                  scale: 1.05,
+                  boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                }}
                 whileTap={{ scale: 0.95 }}
               >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-[#56288A]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-1 text-[#56288A]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                  />
                 </svg>
                 Add Day
               </motion.button>
             </motion.div>
           </motion.div>
         ) : (
-          <motion.div 
+          <motion.div
             className="bg-white rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-100"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.5 }}
+            animate={{ y: [0, 10, 0] }}
+            transition={{ duration: 0.5, type: "tween" }}
           >
             <ul className="divide-y divide-gray-200">
               {itinerary.days
                 .slice() // Create a copy to avoid mutating the original array
                 .sort((a, b) => new Date(a.date) - new Date(b.date)) // Sort by date
                 .map((day, index) => (
-                  <motion.li 
-                    key={day.id} 
+                  <motion.li
+                    key={day.id}
                     className="group hover:bg-gradient-to-r hover:from-indigo-50/50 hover:to-purple-50/50 transition-all duration-300"
                     initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1, duration: 0.4 }}
+                    animate={{ y: [0, 10, 0] }}
+                    transition={{ duration: 0.5, type: "tween" }}
                     whileHover={{ scale: 1.01 }}
                   >
-                    <Link 
+                    <Link
                       to={`/itineraries/${id}/days/${day.id}`}
                       className="block p-6"
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center">
-                          <motion.div 
+                          <motion.div
                             className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mr-4 text-[#56288A] font-bold text-lg"
                             whileHover={{ scale: 1.1, rotate: 5 }}
                           >
@@ -1017,26 +1278,61 @@ function ItineraryDetails() {
                               Day {index + 1}
                             </h3>
                             <p className="text-gray-600 flex items-center mt-1">
-                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 text-indigo-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-4 w-4 mr-1 text-indigo-500"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                />
                               </svg>
-                              {new Date(day.date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                              {new Date(day.date).toLocaleDateString("en-US", {
+                                weekday: "long",
+                                month: "long",
+                                day: "numeric",
+                              })}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center">
                           <span className="flex items-center bg-indigo-50 px-3 py-1 rounded-full text-[#56288A] mr-3">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4 mr-1"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 6h16M4 10h16M4 14h16M4 18h16"
+                              />
                             </svg>
-                            {day.activities?.length || 0} Activities
+                            {Array.isArray(day.activities) ? day.activities.length : 0} Activities
                           </span>
-                          <motion.div 
+                          <motion.div
                             className="h-8 w-8 flex items-center justify-center rounded-full bg-white shadow-sm group-hover:bg-[#56288A] group-hover:text-white transition-all duration-300"
                             whileHover={{ scale: 1.2, rotate: 90 }}
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-500 group-hover:text-white" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-4 w-4 text-gray-500 group-hover:text-white"
+                              viewBox="0 0 20 20"
+                              fill="currentColor"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                                clipRule="evenodd"
+                              />
                             </svg>
                           </motion.div>
                         </div>
@@ -1049,7 +1345,7 @@ function ItineraryDetails() {
         )}
       </motion.div>
     </div>
-  )
+  );
 }
 
 export default ItineraryDetails 

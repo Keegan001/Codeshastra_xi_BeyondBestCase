@@ -193,7 +193,7 @@ const BudgetManager = ({ itineraryId, budget, onUpdate, isEditorRole = false }) 
   
   // Create category pie chart
   const updateCategoryChart = () => {
-    if (!categoryChartRef.current || !expenseData) return;
+    if (!categoryChartRef.current || !expenseData || !expenseData.categoryBreakdown) return;
     
     // Prepare data
     const categories = Object.keys(expenseData.categoryBreakdown || {});
@@ -252,7 +252,7 @@ const BudgetManager = ({ itineraryId, budget, onUpdate, isEditorRole = false }) 
   
   // Create balance bar chart
   const updateBalanceChart = () => {
-    if (!balanceChartRef.current || !expenseData) return;
+    if (!balanceChartRef.current || !expenseData || !expenseData.balances) return;
     
     // Prepare data
     const names = expenseData.balances.map(b => b.name);
@@ -562,20 +562,36 @@ const BudgetManager = ({ itineraryId, budget, onUpdate, isEditorRole = false }) 
           
           {expenseData && (
             <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-                  <h4 className="text-md font-medium mb-4 text-gray-700">Expense Categories</h4>
-                  <div className="h-60">
-                    <canvas ref={categoryChartRef}></canvas>
+              {expenseData.categoryBreakdown && Object.keys(expenseData.categoryBreakdown).length > 0 && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                    <h4 className="text-md font-medium mb-4 text-gray-700">Expense Categories</h4>
+                    <div className="h-60">
+                      <canvas ref={categoryChartRef}></canvas>
+                    </div>
+                  </div>
+                  {expenseData.balances && expenseData.balances.length > 0 && (
+                    <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                      <h4 className="text-md font-medium mb-4 text-gray-700">Member Balances</h4>
+                      <div className="h-60">
+                        <canvas ref={balanceChartRef}></canvas>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {expenseData.balances && expenseData.balances.length > 0 && 
+               (!expenseData.categoryBreakdown || Object.keys(expenseData.categoryBreakdown).length === 0) && (
+                <div className="grid grid-cols-1 gap-6 mb-8">
+                  <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                    <h4 className="text-md font-medium mb-4 text-gray-700">Member Balances</h4>
+                    <div className="h-60">
+                      <canvas ref={balanceChartRef}></canvas>
+                    </div>
                   </div>
                 </div>
-                <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-100">
-                  <h4 className="text-md font-medium mb-4 text-gray-700">Member Balances</h4>
-                  <div className="h-60">
-                    <canvas ref={balanceChartRef}></canvas>
-                  </div>
-                </div>
-              </div>
+              )}
               
               <div>
                 <h4 className="text-md font-medium mb-3 text-gray-700 flex items-center">
@@ -597,7 +613,7 @@ const BudgetManager = ({ itineraryId, budget, onUpdate, isEditorRole = false }) 
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {expenseData.recentExpenses.length > 0 ? (
+                        {expenseData?.recentExpenses?.length > 0 ? (
                           expenseData.recentExpenses.map(expense => (
                             <tr key={expense.id} className="hover:bg-gray-50">
                               <td className="px-6 py-4 whitespace-nowrap">
@@ -646,7 +662,7 @@ const BudgetManager = ({ itineraryId, budget, onUpdate, isEditorRole = false }) 
                   </svg>
                   Settlements
                 </h4>
-                {expenseData.settlements.length > 0 ? (
+                {expenseData?.settlements?.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {expenseData.settlements.map((settlement, index) => (
                       <div key={index} className="bg-white p-4 rounded-lg border border-gray-100 shadow-sm">

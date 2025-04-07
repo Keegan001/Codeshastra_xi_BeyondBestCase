@@ -128,12 +128,12 @@ const DayComments = ({ dayId, itineraryId }) => {
       return;
     }
     
-    const socketInstance = io('http://localhost:5000', {
+    const socketInstance = io(`${import.meta.env.VITE_API_URL}`, {
       auth: { token: authToken },
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 5000,
-      withCredentials: true
+      withCredentials: true,
     });
     
     socketInstance.on('connect', () => {
