@@ -4,7 +4,7 @@
   "description": "This document outlines the implementation phases for both Node.js and FastAPI backend services that power the Travel Planner application. The development is structured in phases to facilitate incremental implementation and testing.",
   "main": "src/app.js",
   "scripts": {
-    "start": "nodemon src/app.js",
+    "start": "node src/app.js",
     "build": "echo \"No build step required\"",
     "test": "jest --detectOpenHandles"
   },
