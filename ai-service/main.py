@@ -23,7 +23,7 @@ def get_coords(location):
         print(f"Error: {e}")
         return None
 
-async def get_historical_weather(latitude, longitude, date):
+def get_historical_weather(latitude, longitude, date):
     """
     Fetches historical weather data for given coordinates and date.
     Uses the same date from the previous year if current year's data is not available.
@@ -214,7 +214,7 @@ async def generate_itinerary(request: Request):
     if coords:
         # Get weather for the first day of the trip
         start_date = date_range[0] if isinstance(date_range, list) else date_range
-        weather_data = await get_historical_weather(coords[0], coords[1], start_date)
+        weather_data = get_historical_weather(coords[0], coords[1], start_date)
 
     system_instruction = """
         Generate a detailed, structured, and strictly valid JSON itinerary based on the input details provided below.
