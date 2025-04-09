@@ -4,7 +4,7 @@
 
 Safar is a comprehensive travel itinerary planning application that leverages AI to help users create, manage, and share travel plans. The application consists of a Flutter mobile app, a React.js web frontend, a Node.js backend, and a FastAPI-based AI service powered by Google's Gemini AI.
 
-👉 [A hosted link, some features require a paid api key so may not work :(](https://safar-swart.vercel.app/about)
+👉 [A hosted link, some features require a paid api key so may not work :(](https://safar-swart.vercel.app)
 
 ## Features
 
